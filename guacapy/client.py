@@ -3,9 +3,10 @@
 
 from __future__ import unicode_literals
 from __future__ import print_function
-import requests
-import logging
 from simplejson.scanner import JSONDecodeError
+import logging
+import re
+import requests
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -95,9 +96,99 @@ class Guacamole():
             )
         )
 
+    def get_connection_parameters(self, connection_id, datasource=None):
+        if not datasource:
+            datasource=self.primary_datasource
+        return self.__auth_request(
+            method='GET',
+            url='{}/data/{}/connections/{}/parameters'.format(
+                self.REST_API, datasource, connection_id
+            )
+        )
+
+    def get_connection_full(self, connection_id, datasource=None):
+        c = self.get_connection(connection_id, datasource)
+        c['parameters'] = self.get_connection_parameters(
+            connection_id, datasource
+        )
+        return c
+
+    def __get_connection_by_name(self, cons, name, regex=False):
+        # FIXME This need refactoring (DRY)
+        if 'childConnections' not in cons:
+            if 'childConnectionGroups' in cons:
+                for c in cons['childConnectionGroups']:
+                    res = self.__get_connection_by_name(c, name, regex)
+                    if res:
+                        return res
+        else:
+            children = cons['childConnections']
+            if regex:
+                res = [x for x in children if re.match(name, x['name'])]
+            else:
+                res = [x for x in children if x['name'] == name]
+            if not res:
+                if 'childConnectionGroups' in cons:
+                    for c in cons['childConnectionGroups']:
+                        res = self.__get_connection_by_name(c, name, regex)
+                        if res:
+                            return res
+            else:
+                return res[0]
+
+    def get_connection_by_name(self, name, regex=False, datasource=None):
+        '''
+        Get a connection group by its name
+        '''
+        cons = self.get_connections(datasource)
+        res = self.__get_connection_by_name(cons, name, regex)
+        if not res:
+            logger.error(
+                'Could not find connection named {}'.format(name)
+            )
+        return res
+
+
     def add_connection(self, payload, datasource=None):
         '''
         Add a new connection
+
+        Example payload:
+        {"name":"iaas-067-mgt01 (Admin)",
+        "parentIdentifier":"4",
+        "protocol":"rdp",
+        "attributes":{"max-connections":"","max-connections-per-user":""},
+        "activeConnections":0,
+        "parameters":{
+            "port":"3389",
+            "enable-menu-animations":"true",
+            "enable-desktop-composition":"true",
+            "hostname":"iaas-067-mgt01.vcloud",
+            "color-depth":"32",
+            "enable-font-smoothing":"true",
+            "ignore-cert":"true",
+            "enable-drive":"true",
+            "enable-full-window-drag":"true",
+            "security":"any",
+            "password":"XXX",
+            "enable-wallpaper":"true",
+            "create-drive-path":"true",
+            "enable-theming":"true",
+            "username":"Administrator",
+            "console":"true",
+            "disable-audio":"true",
+            "domain":"iaas-067-mgt01.vcloud",
+            "drive-path":"/var/tmp",
+            "disable-auth":"",
+            "server-layout":"",
+            "width":"",
+            "height":"",
+            "dpi":"",
+            "console-audio":"",
+            "enable-printing":"",
+            "preconnection-id":"",
+            "enable-sftp":"",
+            "sftp-port":""}}
         '''
         if not datasource:
             datasource=self.primary_datasource
@@ -177,6 +268,22 @@ class Guacamole():
         if not datasource:
             datasource = self.primary_datasource
         raise NotImplementedError()
+
+    def get_connection_group_by_name(self, name, regex=False, datasource=None):
+        '''
+        Get a connection group by its name
+        '''
+        cons = self.get_connections(datasource)['childConnectionGroups']
+        if regex:
+            res = [x for x in cons if re.match(name, x['name'])]
+        else:
+            res = [x for x in cons if x['name'] == name]
+        if not res:
+            logger.error(
+                'Could not find connection group named {}'.format(name)
+            )
+        else:
+            return res[0]
 
     def add_connection_group(self, payload, datasource=None):
         '''
