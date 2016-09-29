@@ -43,6 +43,24 @@ RDP_CONNECTION = {
     }
 }
 
+SSH_CONNECTION = {
+    'activeConnections': 0,
+    'attributes': {
+        'max-connections': '',
+        'max-connections-per-user': ''
+    },
+    'identifier': '',
+    'name': '',
+    'parameters': {
+        'hostname': '',
+        'password': '',
+        'port': '22',
+        'username': ''
+    },
+    'parentIdentifier': 'ROOT',
+    'protocol': 'ssh'
+}
+
 ORG_CONNECTION_GROUP = {
     "parentIdentifier":"ROOT",
     "name":"",
@@ -54,3 +72,5 @@ ORG_CONNECTION_GROUP = {
 }
 
 SYSTEM_PERMISSIONS=[{"op":"add","path":"/systemPermissions","value":"ADMINISTER"}]
+
+ADD_READ_PERMISSION={"op": "add", "path": "", "value": "READ"}
