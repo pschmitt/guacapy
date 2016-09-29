@@ -44,7 +44,7 @@ RDP_CONNECTION = {
 }
 
 ORG_CONNECTION_GROUP = {
-    "parentIdentifier":"1",
+    "parentIdentifier":"ROOT",
     "name":"",
     "type":"ORGANIZATIONAL",
     "attributes":{
