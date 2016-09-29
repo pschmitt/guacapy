@@ -269,21 +269,28 @@ class Guacamole():
             datasource = self.primary_datasource
         raise NotImplementedError()
 
+    def __get_connection_group_by_name(self, cons, name, regex=False):
+        if 'childConnectionGroups' in cons:
+            children = cons['childConnectionGroups']
+            if regex:
+                res = [x for x in children if re.match(name, x['name'])]
+            else:
+                res = [x for x in children if x['name'] == name]
+            if res:
+                return res[0]
+            for c in cons['childConnectionGroups']:
+                res = self.__get_connection_group_by_name(c, name, regex)
+                if res:
+                    return res
+
     def get_connection_group_by_name(self, name, regex=False, datasource=None):
         '''
         Get a connection group by its name
         '''
-        cons = self.get_connections(datasource)['childConnectionGroups']
-        if regex:
-            res = [x for x in cons if re.match(name, x['name'])]
-        else:
-            res = [x for x in cons if x['name'] == name]
-        if not res:
-            logger.error(
-                'Could not find connection group named {}'.format(name)
-            )
-        else:
-            return res[0]
+        if not datasource:
+            datasource = self.primary_datasource
+        cons = self.get_connections(datasource)
+        return self.__get_connection_group_by_name(cons, name, regex)
 
     def add_connection_group(self, payload, datasource=None):
         '''
