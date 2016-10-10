@@ -37,7 +37,8 @@ class Guacamole():
         r.raise_for_status()
         return r.json()
 
-    def __auth_request(self, method, url, payload=None, url_params=None):
+    def __auth_request(self, method, url, payload=None, url_params=None,
+                       json_response=True):
         params = [('token', self.token)]
         if url_params:
             params += url_params
@@ -54,11 +55,16 @@ class Guacamole():
             verify=self.verify,
             allow_redirects=True
         )
+        if not r.ok:
+            logger.error(r.content)
         r.raise_for_status()
-        try:
-            return r.json()
-        except JSONDecodeError:
-            logger.error('Could not decode JSON response')
+        if json_response:
+            try:
+                return r.json()
+            except JSONDecodeError:
+                logger.error('Could not decode JSON response')
+                return r
+        else:
             return r
 
     def get_connections(self, datasource=None):
@@ -383,5 +389,6 @@ class Guacamole():
                 datasource,
                 username
             ),
-            payload=payload
+            payload=payload,
+            json_response=False
         )
