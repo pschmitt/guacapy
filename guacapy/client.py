@@ -14,7 +14,8 @@ logger = logging.getLogger(__name__)
 
 
 class Guacamole():
-    def __init__(self, hostname, username, password, verify=True):
+    def __init__(self, hostname, username, password, default_datasource=None,
+                 verify=True):
         self.REST_API = 'https://{}/api'.format(hostname)
         self.username = username
         self.password = password
@@ -24,7 +25,14 @@ class Guacamole():
         assert 'dataSource' in auth, 'Failed to retrieve primaray data source'
         assert 'availableDataSources' in auth, 'Failed to retrieve data sources'
         self.datasources = auth['availableDataSources']
-        self.primary_datasource = auth['dataSource']
+        if default_datasource:
+            assert default_datasource in self.datasources, \
+                'Datasource {} does not exist. Possible values: {}'.format(
+                    default_datasource, self.datasources
+                )
+            self.primary_datasource = default_datasource
+        else:
+            self.primary_datasource = auth['dataSource']
         self.token = auth['authToken']
 
     def __authenticate(self):
@@ -361,6 +369,57 @@ class Guacamole():
                 self.REST_API,
                 datasource,
             )
+        )
+
+    def add_user(self, payload, datasource=None):
+        '''
+        Add/enable a user
+
+        Example payload:
+        {"username":"test"
+         "password":"testpwd",
+         "attributes":{
+                "disabled":"",
+                "expired":"",
+                "access-window-start":"",
+                "access-window-end":"",
+                "valid-from":"",
+                "valid-until":"",
+                "timezone":null}}
+        '''
+        if not datasource:
+            datasource=self.primary_datasource
+        return self.__auth_request(
+            method='POST',
+            url='{}/data/{}/users'.format(
+                self.REST_API,
+                datasource
+            ),
+            payload=payload
+        )
+
+    def get_user(self, username, datasource=None):
+        if not datasource:
+            datasource=self.primary_datasource
+        return self.__auth_request(
+            method='GET',
+            url='{}/data/{}/users/{}'.format(
+                self.REST_API,
+                datasource,
+                username
+            )
+        )
+
+    def delete_user(self, username, datasource=None):
+        if not datasource:
+            datasource = self.primary_datasource
+        return self.__auth_request(
+            method='DELETE',
+            url='{}/data/{}/users/{}'.format(
+                self.REST_API,
+                datasource,
+                username
+            ),
         )
 
     def get_permissions(self, username, datasource=None):

@@ -61,6 +61,20 @@ SSH_CONNECTION = {
     'protocol': 'ssh'
 }
 
+USER = {
+    'username': '',
+     'password': '',
+     'attributes':  {
+        'disabled': '',
+        'expired': '',
+        'access-window-start': '',
+        'access-window-end': '',
+        'valid-from': '',
+        'valid-until': '',
+        'timezone': ''
+    }
+}
+
 ORG_CONNECTION_GROUP = {
     "parentIdentifier":"ROOT",
     "name":"",
