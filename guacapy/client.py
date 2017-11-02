@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class Guacamole():
     def __init__(self, hostname, username, password, default_datasource=None,
                  verify=True):
-        self.REST_API = 'https://{}/api'.format(hostname)
+        self.REST_API = 'http://{}/api'.format(hostname)
         self.username = username
         self.password = password
         self.verify = verify
@@ -84,7 +84,7 @@ class Guacamole():
         ]
         return self.__auth_request(
             method='GET',
-            url='{}/data/{}/connectionGroups/ROOT/tree'.format(
+            url='{}/session/data/{}/connectionGroups/ROOT/tree'.format(
                 self.REST_API, datasource
             ),
             url_params=params
@@ -95,7 +95,7 @@ class Guacamole():
             datasource=self.primary_datasource
         return self.__auth_request(
             method='GET',
-            url='{}/data/{}/activeConnections'.format(
+            url='{}/session/data/{}/activeConnections'.format(
                 self.REST_API, datasource
             )
         )
@@ -105,7 +105,7 @@ class Guacamole():
             datasource=self.primary_datasource
         return self.__auth_request(
             method='GET',
-            url='{}/data/{}/connections/{}'.format(
+            url='{}/session/data/{}/connections/{}'.format(
                 self.REST_API, datasource, connection_id
             )
         )
@@ -115,7 +115,7 @@ class Guacamole():
             datasource=self.primary_datasource
         return self.__auth_request(
             method='GET',
-            url='{}/data/{}/connections/{}/parameters'.format(
+            url='{}/session/data/{}/connections/{}/parameters'.format(
                 self.REST_API, datasource, connection_id
             )
         )
@@ -138,7 +138,7 @@ class Guacamole():
         else:
             children = cons['childConnections']
             if regex:
-                res = [x for x in children if re.match(name, x['name'])]
+                res = [x for x in children if re.search(name, x['name'])]
             else:
                 res = [x for x in children if x['name'] == name]
             if not res:
@@ -208,7 +208,7 @@ class Guacamole():
             datasource=self.primary_datasource
         return self.__auth_request(
             method='POST',
-            url='{}/data/{}/connections'.format(
+            url='{}/session/data/{}/connections'.format(
                 self.REST_API,
                 datasource
             ),
@@ -258,7 +258,7 @@ class Guacamole():
             datasource=self.primary_datasource
         return self.__auth_request(
             method='PUT',
-            url='{}/data/{}/connections/{}'.format(
+            url='{}/session/data/{}/connections/{}'.format(
                 self.REST_API,
                 datasource,
                 connection_id
@@ -271,7 +271,7 @@ class Guacamole():
             datasource = self.primary_datasource
         return self.__auth_request(
             method='DELETE',
-            url='{}/data/{}/connections/{}'.format(
+            url='{}/session/data/{}/connections/{}'.format(
                 self.REST_API,
                 datasource,
                 connection_id
@@ -281,13 +281,14 @@ class Guacamole():
     def get_history(self, datasource=None):
         if not datasource:
             datasource = self.primary_datasource
+
         raise NotImplementedError()
 
     def __get_connection_group_by_name(self, cons, name, regex=False):
         if 'childConnectionGroups' in cons:
             children = cons['childConnectionGroups']
             if regex:
-                res = [x for x in children if re.match(name, x['name'])]
+                res = [x for x in children if re.search(name, x['name'])]
             else:
                 res = [x for x in children if x['name'] == name]
             if res:
@@ -320,7 +321,7 @@ class Guacamole():
             datasource = self.primary_datasource
         return self.__auth_request(
             method='POST',
-            url='{}/data/{}/connectionGroups'.format(
+            url='{}/session/data/{}/connectionGroups'.format(
                 self.REST_API,
                 datasource
             ),
@@ -341,9 +342,10 @@ class Guacamole():
             datasource = self.primary_datasource
         return self.__auth_request(
             method='PUT',
-            url='{}/data/{}/connectionGroups'.format(
+            url='{}/session/data/{}/connectionGroups/{}'.format(
                 self.REST_API,
-                datasource
+                datasource,
+                connection_group_id,
             ),
             payload=payload
         )
@@ -353,7 +355,7 @@ class Guacamole():
             datasource = self.primary_datasource
         return self.__auth_request(
             method='DELETE',
-            url='{}/data/{}/connectionGroups/{}'.format(
+            url='{}/session/data/{}/connectionGroups/{}'.format(
                 self.REST_API,
                 datasource,
                 connection_group_id
@@ -365,7 +367,7 @@ class Guacamole():
             datasource = self.primary_datasource
         return self.__auth_request(
             method='GET',
-            url='{}/data/{}/users'.format(
+            url='{}/session/data/{}/users'.format(
                 self.REST_API,
                 datasource,
             )
@@ -391,7 +393,7 @@ class Guacamole():
             datasource=self.primary_datasource
         return self.__auth_request(
             method='POST',
-            url='{}/data/{}/users'.format(
+            url='{}/session/data/{}/users'.format(
                 self.REST_API,
                 datasource
             ),
@@ -403,7 +405,7 @@ class Guacamole():
             datasource=self.primary_datasource
         return self.__auth_request(
             method='GET',
-            url='{}/data/{}/users/{}'.format(
+            url='{}/session/data/{}/users/{}'.format(
                 self.REST_API,
                 datasource,
                 username
@@ -415,7 +417,7 @@ class Guacamole():
             datasource = self.primary_datasource
         return self.__auth_request(
             method='DELETE',
-            url='{}/data/{}/users/{}'.format(
+            url='{}/session/data/{}/users/{}'.format(
                 self.REST_API,
                 datasource,
                 username
@@ -427,7 +429,7 @@ class Guacamole():
             datasource = self.primary_datasource
         return self.__auth_request(
             method='GET',
-            url='{}/data/{}/users/{}/permissions'.format(
+            url='{}/session/data/{}/users/{}/permissions'.format(
                 self.REST_API,
                 datasource,
                 username
@@ -443,7 +445,7 @@ class Guacamole():
             datasource = self.primary_datasource
         return self.__auth_request(
             method='PATCH',
-            url='{}/data/{}/users/{}/permissions'.format(
+            url='{}/session/data/{}/users/{}/permissions'.format(
                 self.REST_API,
                 datasource,
                 username
