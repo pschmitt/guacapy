@@ -14,9 +14,9 @@ logger = logging.getLogger(__name__)
 
 
 class Guacamole():
-    def __init__(self, hostname, username, password, default_datasource=None,
+    def __init__(self, hostname, username, password, method='https', default_datasource=None,
                  verify=True):
-        self.REST_API = 'https://{}/api'.format(hostname)
+        self.REST_API = '{}://{}/api'.format(method, hostname)
         self.username = username
         self.password = password
         self.verify = verify
