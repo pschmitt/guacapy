@@ -9,5 +9,5 @@ setup(
     author_email='philipp.schmitt@post.lu',
     url='https://github.com/pschmitt/guacapy',
     packages=find_packages(),
-    install_requires=['requests'],
+    install_requires=['requests', 'simplejson'],
 )
