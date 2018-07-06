@@ -1,2 +1,2 @@
-from client import Guacamole
-from templates import *
+from guacapy.client import Guacamole
+from guacapy.templates import *
