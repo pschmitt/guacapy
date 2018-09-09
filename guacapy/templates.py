@@ -43,6 +43,37 @@ RDP_CONNECTION = {
     }
 }
 
+VNC_CONNECTION = {
+    "parentIdentifier": "ROOT",
+    "name": "",
+    "protocol": "vnc",
+    "parameters": {
+        "port": "5900",
+        "read-only": "",
+        "swap-red-blue": "",
+        "cursor": "",
+        "color-depth": "",
+        "clipboard-encoding": "",
+        "dest-port": "",
+        "create-recording-path": "",
+        "enable-sftp": "",
+        "sftp-port": "",
+        "sftp-server-alive-interval": "",
+        "enable-audio": "",
+        "hostname": "",
+        "password": ""
+    },
+    "attributes": {
+        "max-connections": "",
+        "max-connections-per-user": "",
+        "weight": "",
+        "failover-only": "",
+        "guacd-port": "",
+        "guacd-encryption": "",
+        "guacd-hostname": ""
+    }
+}
+
 SSH_CONNECTION = {
     'activeConnections': 0,
     'attributes': {
