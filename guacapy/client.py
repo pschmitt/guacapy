@@ -15,10 +15,10 @@ logger = logging.getLogger(__name__)
 
 class Guacamole():
     def __init__(self, hostname, username, password, method='https',
-                 default_datasource=None, verify=True):
+                 url_path='/', default_datasource=None, verify=True):
         if method.lower() not in ['https', 'http']:
             raise ValueError("Only http and https methods are valid.")
-        self.REST_API = '{}://{}/api'.format(method, hostname)
+        self.REST_API = '{}://{}{}/api'.format(method, hostname, url_path)
         self.username = username
         self.password = password
         self.verify = verify
