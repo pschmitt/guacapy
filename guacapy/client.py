@@ -454,3 +454,36 @@ class Guacamole():
             payload=payload,
             json_response=False
         )
+
+    def get_sharing_profile(self, sharing_profile_id, datasource=None):
+        if not datasource:
+            datasource=self.primary_datasource
+        return self.__auth_request(
+            method='GET',
+            url='{}/session/data/{}/sharingProfiles/{}'.format(
+                self.REST_API,
+                datasource,
+                sharing_profile_id
+            )
+        )
+
+    def add_sharing_profile(self, payload, datasource=None):
+        '''
+        Add/enable a sharing profile
+
+        Example payload:
+        {"primaryConnectionIdentifier":"8",
+        "name":"share",
+        "parameters":{"read-only":""},
+        "attributes":{}}'
+        '''
+        if not datasource:
+            datasource=self.primary_datasource
+        return self.__auth_request(
+            method='POST',
+            url='{}/session/data/{}/sharingProfiles'.format(
+                self.REST_API,
+                datasource
+            ),
+            payload=payload
+        )
