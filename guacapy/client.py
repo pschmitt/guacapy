@@ -9,17 +9,34 @@ import re
 import requests
 
 
+import hmac
+import base64
+import struct
+import hashlib
+import time
+
 logger = logging.getLogger(__name__)
 
+def get_hotp_token(secret, intervals_no):
+    key = base64.b32decode(secret, True)
+    msg = struct.pack(">Q", intervals_no)
+    h = bytes(hmac.new(key, msg, hashlib.sha1).digest())
+    o = h[19] & 15
+    h = (struct.unpack(">I", h[o:o+4])[0] & 0x7fffffff) % 1000000
+    return h
+
+def get_totp_token(secret):
+    return get_hotp_token(secret, intervals_no=int(time.time())//30)
 
 class Guacamole():
-    def __init__(self, hostname, username, password, method='https',
+    def __init__(self, hostname, username, password, secret=None, method='https',
                  url_path='/', default_datasource=None, verify=True):
         if method.lower() not in ['https', 'http']:
             raise ValueError("Only http and https methods are valid.")
         self.REST_API = '{}://{}{}/api'.format(method, hostname, url_path)
         self.username = username
         self.password = password
+        self.secret = secret
         self.verify = verify
         auth = self.__authenticate()
         assert 'authToken' in auth, 'Failed to retrieve auth token'
@@ -37,9 +54,12 @@ class Guacamole():
         self.token = auth['authToken']
 
     def __authenticate(self):
+        parameters = {'username': self.username, 'password': self.password}
+        if self.secret is not None :
+            parameters["guac-totp"] = get_totp_token(self.secret)
         r = requests.post(
             url=self.REST_API + '/tokens',
-            data={'username': self.username, 'password': self.password},
+            data=parameters,
             verify=self.verify,
             allow_redirects=True
         )
