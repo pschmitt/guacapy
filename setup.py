@@ -6,7 +6,7 @@ setup(
     version="0.9.4",
     description="REST API client for Guacamole",
     author="Philipp Schmitt",
-    author_email="philipp.schmitt@post.lu",
+    author_email="philipp@schmitt.co",
     url="https://github.com/pschmitt/guacapy",
     packages=find_packages(),
     install_requires=["requests", "simplejson"],
