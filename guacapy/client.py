@@ -508,7 +508,7 @@ class Guacamole:
             ),
         )
 
-    def add_member_user_group(self, usergroup, payload, datasource=None):
+    def edit_group_members(self, usergroup, payload, datasource=None):
         """
         Add Members to User Group
         Example add payload:
@@ -526,4 +526,3 @@ class Guacamole:
             payload=payload,
             json_response=False,
         )
-
