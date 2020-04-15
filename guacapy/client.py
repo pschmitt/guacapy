@@ -483,3 +483,46 @@ class Guacamole:
             url="{}/session/data/{}/sharingProfiles".format(self.REST_API, datasource),
             payload=payload,
         )
+
+    def get_user_groups(self, datasource=None):
+        """
+        List User Groups
+        """
+        if not datasource:
+            datasource = self.primary_datasource
+        return self.__auth_request(
+            method="GET",
+            url="{}/session/data/{}/userGroups".format(self.REST_API, datasource,),
+        )
+
+    def get_group(self, usergroup, datasource=None):
+        """
+        Details of User Group
+        """
+        if not datasource:
+            datasource = self.primary_datasource
+        return self.__auth_request(
+            method="GET",
+            url="{}/session/data/{}/userGroups/{}".format(
+                self.REST_API, datasource, usergroup
+            ),
+        )
+
+    def edit_group_members(self, usergroup, payload, datasource=None):
+        """
+        Add Members to User Group
+        Example add payload:
+        [{"op":"add","path":"/","value":"username"}]
+        Example remove payload:
+        [{"op":"remove","path":"/","value":"username"}]
+        """
+        if not datasource:
+            datasource = self.primary_datasource
+        return self.__auth_request(
+            method="PATCH",
+            url="{}/session/data/{}/userGroups/{}/memberUsers".format(
+                self.REST_API, datasource, usergroup
+            ),
+            payload=payload,
+            json_response=False,
+        )
