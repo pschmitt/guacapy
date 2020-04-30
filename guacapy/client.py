@@ -289,6 +289,7 @@ class Guacamole:
                 self.REST_API, datasource, connection_id
             ),
             payload=payload,
+            json_response=False,
         )
 
     def delete_connection(self, connection_id, datasource=None):
@@ -299,6 +300,7 @@ class Guacamole:
             url="{}/session/data/{}/connections/{}".format(
                 self.REST_API, datasource, connection_id
             ),
+            json_response=False,
         )
 
     def get_history(self, datasource=None):
@@ -308,6 +310,8 @@ class Guacamole:
         raise NotImplementedError()
 
     def __get_connection_group_by_name(self, cons, name, regex=False):
+        if (regex and re.search(name, cons["name"])) or (not regex and cons["name"] == name):
+            return cons
         if "childConnectionGroups" in cons:
             children = cons["childConnectionGroups"]
             if regex:
@@ -329,6 +333,16 @@ class Guacamole:
             datasource = self.primary_datasource
         cons = self.get_connections(datasource)
         return self.__get_connection_group_by_name(cons, name, regex)
+
+    def get_connection_group(self, connectiongroup_id, datasource=None):
+        if not datasource:
+            datasource = self.primary_datasource
+        return self.__auth_request(
+            method="GET",
+            url="{}/session/data/{}/connectionGroups/{}".format(
+                self.REST_API, datasource, connectiongroup_id
+            ),
+        )
 
     def add_connection_group(self, payload, datasource=None):
         """
@@ -408,6 +422,39 @@ class Guacamole:
             method="POST",
             url="{}/session/data/{}/users".format(self.REST_API, datasource),
             payload=payload,
+        )
+
+    def edit_user(self, username, payload, datasource=None):
+        """
+        Edit a user
+
+        Example payload:
+        {
+            "username": "username",
+            "attributes": {
+                "guac-email-address": null,
+                "guac-organizational-role": null,
+                "guac-full-name": null,
+                "expired": "",
+                "timezone": null,
+                "access-window-start": "",
+                "guac-organization": null,
+                "access-window-end": "",
+                "disabled": "",
+                "valid-until": "",
+                "valid-from": ""
+            },
+            "lastActive": 1588030687251,
+            "password": "password"
+        }
+        """
+        if not datasource:
+            datasource = self.primary_datasource
+        return self.__auth_request(
+            method="PUT",
+            url="{}/session/data/{}/users/{}".format(self.REST_API, datasource, username),
+            payload=payload,
+            json_response=False,
         )
 
     def get_user(self, username, datasource=None):
