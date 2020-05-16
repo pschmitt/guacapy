@@ -157,7 +157,9 @@ class Guacamole:
 
     def get_connection_full(self, connection_id, datasource=None):
         c = self.get_connection(connection_id, datasource)
-        c["parameters"] = self.get_connection_parameters(connection_id, datasource)
+        c["parameters"] = self.get_connection_parameters(
+            connection_id, datasource
+        )
         return c
 
     def __get_connection_by_name(self, cons, name, regex=False):
@@ -238,7 +240,9 @@ class Guacamole:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="POST",
-            url="{}/session/data/{}/connections".format(self.REST_API, datasource),
+            url="{}/session/data/{}/connections".format(
+                self.REST_API, datasource
+            ),
             payload=payload,
         )
 
@@ -310,7 +314,9 @@ class Guacamole:
         raise NotImplementedError()
 
     def __get_connection_group_by_name(self, cons, name, regex=False):
-        if (regex and re.search(name, cons["name"])) or (not regex and cons["name"] == name):
+        if (regex and re.search(name, cons["name"])) or (
+            not regex and cons["name"] == name
+        ):
             return cons
         if "childConnectionGroups" in cons:
             children = cons["childConnectionGroups"]
@@ -358,11 +364,15 @@ class Guacamole:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="POST",
-            url="{}/session/data/{}/connectionGroups".format(self.REST_API, datasource),
+            url="{}/session/data/{}/connectionGroups".format(
+                self.REST_API, datasource
+            ),
             payload=payload,
         )
 
-    def edit_connection_group(self, connection_group_id, payload, datasource=None):
+    def edit_connection_group(
+        self, connection_group_id, payload, datasource=None
+    ):
         """
         Edit an exiting connection group
 
@@ -452,7 +462,9 @@ class Guacamole:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="PUT",
-            url="{}/session/data/{}/users/{}".format(self.REST_API, datasource, username),
+            url="{}/session/data/{}/users/{}".format(
+                self.REST_API, datasource, username
+            ),
             payload=payload,
             json_response=False,
         )
@@ -527,7 +539,9 @@ class Guacamole:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="POST",
-            url="{}/session/data/{}/sharingProfiles".format(self.REST_API, datasource),
+            url="{}/session/data/{}/sharingProfiles".format(
+                self.REST_API, datasource
+            ),
             payload=payload,
         )
 
@@ -539,7 +553,9 @@ class Guacamole:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="GET",
-            url="{}/session/data/{}/userGroups".format(self.REST_API, datasource,),
+            url="{}/session/data/{}/userGroups".format(
+                self.REST_API, datasource,
+            ),
         )
 
     def get_group(self, usergroup, datasource=None):

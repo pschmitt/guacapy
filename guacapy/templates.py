@@ -77,7 +77,12 @@ SSH_CONNECTION = {
     "attributes": {"max-connections": "", "max-connections-per-user": ""},
     "identifier": "",
     "name": "",
-    "parameters": {"hostname": "", "password": "", "port": "22", "username": ""},
+    "parameters": {
+        "hostname": "",
+        "password": "",
+        "port": "22",
+        "username": "",
+    },
     "parentIdentifier": "ROOT",
     "protocol": "ssh",
 }
