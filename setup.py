@@ -4,6 +4,7 @@ from setuptools import find_packages, setup
 setup(
     name="guacapy",
     version="0.9.6",
+    license="GPL3",
     description="REST API client for Guacamole",
     author="Philipp Schmitt",
     author_email="philipp@schmitt.co",
