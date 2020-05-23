@@ -558,6 +558,33 @@ class Guacamole:
             ),
         )
 
+    def add_group(self, payload, datasource=None):
+        """
+        Add/enable a user group
+
+        Example payload:
+        {"identifier":"test"
+         "attributes":{
+                "disabled":""}}
+        """
+        if not datasource:
+            datasource = self.primary_datasource
+        return self.__auth_request(
+            method="POST",
+            url="{}/session/data/{}/userGroups".format(self.REST_API, datasource),
+            payload=payload,
+        )
+
+    def delete_group(self, usergroup, datasource=None):
+        if not datasource:
+            datasource = self.primary_datasource
+        return self.__auth_request(
+            method="DELETE",
+            url="{}/session/data/{}/userGroups/{}".format(
+                self.REST_API, datasource, usergroup
+            ),
+        )
+
     def get_group(self, usergroup, datasource=None):
         """
         Details of User Group
@@ -585,6 +612,22 @@ class Guacamole:
             method="PATCH",
             url="{}/session/data/{}/userGroups/{}/memberUsers".format(
                 self.REST_API, datasource, usergroup
+            ),
+            payload=payload,
+            json_response=False,
+        )
+
+    def grant_group_permission(self, groupname, payload, datasource=None):
+        """
+        Example payload:
+        [{"op":"add","path":"/systemPermissions","value":"ADMINISTER"}]
+        """
+        if not datasource:
+            datasource = self.primary_datasource
+        return self.__auth_request(
+            method="PATCH",
+            url="{}/session/data/{}/userGroups/{}/permissions".format(
+                self.REST_API, datasource, groupname
             ),
             payload=payload,
             json_response=False,
