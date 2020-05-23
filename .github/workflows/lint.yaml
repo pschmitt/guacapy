@@ -32,4 +32,4 @@ jobs:
 
     - name: Black
       run: |
-        black --check --line-length=80 .
+        black --check --line-length=80 --diff .
