@@ -113,10 +113,7 @@ class Guacamole:
     def get_connections(self, datasource=None):
         if not datasource:
             datasource = self.primary_datasource
-        params = [
-            ("permission", "UPDATE"),
-            ("permission", "DELETE"),
-        ]
+        params = [("permission", "UPDATE"), ("permission", "DELETE")]
         return self.__auth_request(
             method="GET",
             url="{}/session/data/{}/connectionGroups/ROOT/tree".format(
@@ -387,7 +384,7 @@ class Guacamole:
         return self.__auth_request(
             method="PUT",
             url="{}/session/data/{}/connectionGroups/{}".format(
-                self.REST_API, datasource, connection_group_id,
+                self.REST_API, datasource, connection_group_id
             ),
             payload=payload,
         )
@@ -407,7 +404,7 @@ class Guacamole:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="GET",
-            url="{}/session/data/{}/users".format(self.REST_API, datasource,),
+            url="{}/session/data/{}/users".format(self.REST_API, datasource),
         )
 
     def add_user(self, payload, datasource=None):
@@ -554,7 +551,36 @@ class Guacamole:
         return self.__auth_request(
             method="GET",
             url="{}/session/data/{}/userGroups".format(
-                self.REST_API, datasource,
+                self.REST_API, datasource
+            ),
+        )
+
+    def add_group(self, payload, datasource=None):
+        """
+        Add/enable a user group
+
+        Example payload:
+        {"identifier":"test"
+         "attributes":{
+                "disabled":""}}
+        """
+        if not datasource:
+            datasource = self.primary_datasource
+        return self.__auth_request(
+            method="POST",
+            url="{}/session/data/{}/userGroups".format(
+                self.REST_API, datasource
+            ),
+            payload=payload,
+        )
+
+    def delete_group(self, usergroup, datasource=None):
+        if not datasource:
+            datasource = self.primary_datasource
+        return self.__auth_request(
+            method="DELETE",
+            url="{}/session/data/{}/userGroups/{}".format(
+                self.REST_API, datasource, usergroup
             ),
         )
 
@@ -585,6 +611,22 @@ class Guacamole:
             method="PATCH",
             url="{}/session/data/{}/userGroups/{}/memberUsers".format(
                 self.REST_API, datasource, usergroup
+            ),
+            payload=payload,
+            json_response=False,
+        )
+
+    def grant_group_permission(self, groupname, payload, datasource=None):
+        """
+        Example payload:
+        [{"op":"add","path":"/systemPermissions","value":"ADMINISTER"}]
+        """
+        if not datasource:
+            datasource = self.primary_datasource
+        return self.__auth_request(
+            method="PATCH",
+            url="{}/session/data/{}/userGroups/{}/permissions".format(
+                self.REST_API, datasource, groupname
             ),
             payload=payload,
             json_response=False,
