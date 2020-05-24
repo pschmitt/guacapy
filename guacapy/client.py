@@ -113,10 +113,7 @@ class Guacamole:
     def get_connections(self, datasource=None):
         if not datasource:
             datasource = self.primary_datasource
-        params = [
-            ("permission", "UPDATE"),
-            ("permission", "DELETE"),
-        ]
+        params = [("permission", "UPDATE"), ("permission", "DELETE")]
         return self.__auth_request(
             method="GET",
             url="{}/session/data/{}/connectionGroups/ROOT/tree".format(
@@ -387,7 +384,7 @@ class Guacamole:
         return self.__auth_request(
             method="PUT",
             url="{}/session/data/{}/connectionGroups/{}".format(
-                self.REST_API, datasource, connection_group_id,
+                self.REST_API, datasource, connection_group_id
             ),
             payload=payload,
         )
@@ -407,7 +404,7 @@ class Guacamole:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="GET",
-            url="{}/session/data/{}/users".format(self.REST_API, datasource,),
+            url="{}/session/data/{}/users".format(self.REST_API, datasource),
         )
 
     def add_user(self, payload, datasource=None):
@@ -554,7 +551,7 @@ class Guacamole:
         return self.__auth_request(
             method="GET",
             url="{}/session/data/{}/userGroups".format(
-                self.REST_API, datasource,
+                self.REST_API, datasource
             ),
         )
 
@@ -571,7 +568,9 @@ class Guacamole:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="POST",
-            url="{}/session/data/{}/userGroups".format(self.REST_API, datasource),
+            url="{}/session/data/{}/userGroups".format(
+                self.REST_API, datasource
+            ),
             payload=payload,
         )
 
