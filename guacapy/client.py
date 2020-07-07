@@ -512,6 +512,25 @@ class Guacamole:
             json_response=False,
         )
 
+    def get_sharing_profile_parameters(
+        self, sharing_profile_id, datasource=None
+    ):
+        if not datasource:
+            datasource = self.primary_datasource
+        return self.__auth_request(
+            method="GET",
+            url="{}/session/data/{}/sharingProfiles/{}/parameters".format(
+                self.REST_API, datasource, sharing_profile_id
+            ),
+        )
+
+    def get_sharing_profile_full(self, sharing_profile_id, datasource=None):
+        s = self.get_sharing_profile(sharing_profile_id, datasource)
+        s["parameters"] = self.get_sharing_profile_parameters(
+            sharing_profile_id, datasource
+        )
+        return s
+
     def get_sharing_profile(self, sharing_profile_id, datasource=None):
         if not datasource:
             datasource = self.primary_datasource
@@ -540,6 +559,16 @@ class Guacamole:
                 self.REST_API, datasource
             ),
             payload=payload,
+        )
+
+    def delete_sharing_profile(self, sharing_profile_id, datasource=None):
+        if not datasource:
+            datasource = self.primary_datasource
+        return self.__auth_request(
+            method="DELETE",
+            url="{}/session/data/{}/sharingProfiles/{}".format(
+                self.REST_API, datasource, sharing_profile_id
+            ),
         )
 
     def get_user_groups(self, datasource=None):
