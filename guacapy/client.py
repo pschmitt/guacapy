@@ -41,6 +41,7 @@ class Guacamole:
         method="https",
         url_path="/",
         default_datasource=None,
+        cookies=False,
         verify=True,
     ):
         if method.lower() not in ["https", "http"]:
@@ -50,11 +51,16 @@ class Guacamole:
         self.password = password
         self.secret = secret
         self.verify = verify
-        auth = self.__authenticate()
+        resp = self.__authenticate()
+        auth = resp.json()
         assert "authToken" in auth, "Failed to retrieve auth token"
         assert "dataSource" in auth, "Failed to retrieve primaray data source"
         assert "availableDataSources" in auth, "Failed to retrieve data sources"
         self.datasources = auth["availableDataSources"]
+        if cookies:
+            self.cookies = resp.cookies
+        else:
+            self.cookies = None
         if default_datasource:
             assert (
                 default_datasource in self.datasources
@@ -77,7 +83,7 @@ class Guacamole:
             allow_redirects=True,
         )
         r.raise_for_status()
-        return r.json()
+        return r
 
     def __auth_request(
         self, method, url, payload=None, url_params=None, json_response=True
@@ -97,6 +103,7 @@ class Guacamole:
             json=payload,
             verify=self.verify,
             allow_redirects=True,
+            cookies=self.cookies,
         )
         if not r.ok:
             logger.error(r.content)
