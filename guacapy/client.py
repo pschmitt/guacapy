@@ -667,3 +667,13 @@ class Guacamole:
             payload=payload,
             json_response=False,
         )
+
+    def get_group_permissions(self, groupname, datasource=None):
+        if not datasource:
+            datasource = self.primary_datasource
+        return self.__auth_request(
+            method="GET",
+            url="{}/session/data/{}/userGroups/{}/permissions".format(
+                self.REST_API, datasource, groupname
+            ),
+        )
