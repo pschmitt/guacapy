@@ -46,6 +46,8 @@ class Guacamole:
     ):
         if method.lower() not in ["https", "http"]:
             raise ValueError("Only http and https methods are valid.")
+        if not url_path:
+            url_path = "/"
         self.REST_API = "{}://{}{}/api".format(method, hostname, url_path)
         self.username = username
         self.password = password
