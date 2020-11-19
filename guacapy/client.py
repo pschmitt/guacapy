@@ -635,6 +635,16 @@ class Guacamole:
             ),
         )
 
+    def get_group_members(self, usergroup, datasource=None):
+        if not datasource:
+            datasource = self.primary_datasource
+        return self.__auth_request(
+            method="GET",
+            url="{}/session/data/{}/userGroups/{}/memberUsers".format(
+                self.REST_API, datasource, usergroup
+            ),
+        )
+
     def edit_group_members(self, usergroup, payload, datasource=None):
         """
         Add Members to User Group
