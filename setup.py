@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="guacapy",
-    version="0.9.10",
+    version="0.9.11",
     license="GPL3",
     description="REST API client for Guacamole",
     author="Philipp Schmitt",
