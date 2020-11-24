@@ -193,7 +193,7 @@ class Guacamole:
 
     def get_connection_by_name(self, name, regex=False, datasource=None):
         """
-        Get a connection group by its name
+        Get a connection by its name
         """
         cons = self.get_connections(datasource)
         res = self.__get_connection_by_name(cons, name, regex)
