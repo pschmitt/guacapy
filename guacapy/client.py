@@ -131,6 +131,20 @@ class Guacamole:
             url_params=params,
         )
 
+    def get_connection_group_connections(
+        self, connection_group_id, datasource=None
+    ):
+        """Get a list of connections linked to an organizational or balancing
+        connection group"""
+        if not datasource:
+            datasource = self.primary_datasource
+        return self.__auth_request(
+            method="GET",
+            url="{}/session/data/{}/connectionGroups/{}/tree".format(
+                self.REST_API, datasource, connection_group_id
+            ),
+        )
+
     def get_active_connections(self, datasource=None):
         if not datasource:
             datasource = self.primary_datasource
