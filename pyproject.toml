@@ -4,6 +4,7 @@ version = "0.10.0"
 description = "REST API client for Apache Guacamole"
 authors = ["Philipp Schmitt <philipp@schmitt.co>"]
 license = "GPL3"
+readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.6"
