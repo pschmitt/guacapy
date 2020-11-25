@@ -1,4 +1,4 @@
-name: Python Lint
+name: CI
 
 on: [push, pull_request]
 
@@ -13,6 +13,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
@@ -21,16 +22,16 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 black
-        if [[ -f requirements.txt ]]; then pip install -r requirements.txt; fi
+        pip install poetry
+        poetry install
 
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        poetry run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. Set line length to 80 chars max.
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=80 --statistics
+        poetry run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=80 --statistics
 
     - name: Black
       run: |
-        black --check --line-length=80 --diff .
+        poetry run black --check --line-length=80 --diff .
