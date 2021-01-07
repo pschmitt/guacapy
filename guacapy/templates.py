@@ -9,7 +9,15 @@ RDP_CONNECTION = {
     "identifier": "",
     "parentIdentifier": "ROOT",
     "protocol": "rdp",
-    "attributes": {"max-connections": "", "max-connections-per-user": ""},
+    "attributes": {
+        "max-connections": "",
+        "max-connections-per-user": "",
+        "weight": "",
+        "failover-only": "",
+        "guacd-port": "",
+        "guacd-encryption": "",
+        "guacd-hostname": "",
+    },
     "activeConnections": 0,
     "parameters": {
         "disable-audio": "",
