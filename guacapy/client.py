@@ -499,6 +499,19 @@ class Guacamole:
             ),
         )
 
+    def get_user_usergroups(self, username, datasource=None):
+        """
+        List the usergroups a user belongs to
+        """
+        if not datasource:
+            datasource = self.primary_datasource
+        return self.__auth_request(
+            method="GET",
+            url="{}/session/data/{}/users/{}/userGroups".format(
+                self.REST_API, datasource, username
+            ),
+        )
+
     def delete_user(self, username, datasource=None):
         if not datasource:
             datasource = self.primary_datasource
@@ -596,7 +609,7 @@ class Guacamole:
 
     def get_user_groups(self, datasource=None):
         """
-        List User Groups
+        List all user groups
         """
         if not datasource:
             datasource = self.primary_datasource
