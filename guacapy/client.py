@@ -119,6 +119,35 @@ class Guacamole:
         else:
             return r
 
+    def __no_auth_request(
+        self, method, url, payload=None, url_params=None, json_response=True
+    ):
+        logger.debug(
+            "{method} {url} - Params: {params}- Payload: {payload}".format(
+                method=method, url=url, params=url_params, payload=payload
+            )
+        )
+        r = requests.request(
+            method=method,
+            url=url,
+            params=url_params,
+            data=payload,
+            verify=self.verify,
+            allow_redirects=True,
+            cookies=self.cookies,
+        )
+        if not r.ok:
+            logger.error(r.content)
+        r.raise_for_status()
+        if json_response:
+            try:
+                return r.json()
+            except JSONDecodeError:
+                logger.error("Could not decode JSON response")
+                return r
+        else:
+            return r
+
     def get_connections(self, datasource=None):
         if not datasource:
             datasource = self.primary_datasource
@@ -369,6 +398,18 @@ class Guacamole:
                 self.REST_API, datasource, connectiongroup_id
             ),
         )
+
+    def get_auth_json_token(self, payload):
+        """
+        Submit a signed/encrypted payload (JSON) for the guacamole-auth-json extension
+        Return a valid token
+        """
+        json_token = self.__no_auth_request(
+            method="POST",
+            url=self.REST_API + "/tokens",
+            payload={"data": payload},
+        )
+        return json_token["authToken"]
 
     def add_connection_group(self, payload, datasource=None):
         """
