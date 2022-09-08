@@ -28,7 +28,9 @@ def get_hotp_token(secret, intervals_no):
 
 
 def get_totp_token(secret):
-    return get_hotp_token(secret, intervals_no=int(time.time()) // 30)
+    value = get_hotp_token(secret, intervals_no=int(time.time()) // 30)
+    # 6 digits for totp token (pad with 0 char)
+    return str(value).rjust(6, "0")
 
 
 class Guacamole:
