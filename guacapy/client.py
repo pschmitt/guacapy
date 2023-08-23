@@ -453,6 +453,7 @@ class Guacamole:
                 self.REST_API, datasource, connection_group_id
             ),
             payload=payload,
+            json_response=False,
         )
 
     def delete_connection_group(self, connection_group_id, datasource=None):
@@ -463,6 +464,7 @@ class Guacamole:
             url="{}/session/data/{}/connectionGroups/{}".format(
                 self.REST_API, datasource, connection_group_id
             ),
+            json_response=False,
         )
 
     def get_users(self, datasource=None):
@@ -563,6 +565,7 @@ class Guacamole:
             url="{}/session/data/{}/users/{}".format(
                 self.REST_API, datasource, username
             ),
+            json_response=False,
         )
 
     def get_permissions(self, username, datasource=None):
@@ -648,6 +651,7 @@ class Guacamole:
             url="{}/session/data/{}/sharingProfiles/{}".format(
                 self.REST_API, datasource, sharing_profile_id
             ),
+            json_response=False,
         )
 
     def get_user_groups(self, datasource=None):
@@ -690,6 +694,7 @@ class Guacamole:
             url="{}/session/data/{}/userGroups/{}".format(
                 self.REST_API, datasource, usergroup
             ),
+            json_response=False,
         )
 
     def get_group(self, usergroup, datasource=None):
