@@ -2,3 +2,5 @@
 .ropeproject/
 dist/
 *.egg-info/
+
+.idea/

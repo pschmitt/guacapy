@@ -1,14 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from __future__ import unicode_literals
-from __future__ import print_function
 from simplejson.scanner import JSONDecodeError
 import logging
 import re
 import requests
-
-
 import hmac
 import base64
 import struct
@@ -18,9 +14,18 @@ import time
 logger = logging.getLogger(__name__)
 
 
-def get_hotp_token(secret, intervals_no):
-    key = base64.b32decode(secret, True)
-    msg = struct.pack(">Q", intervals_no)
+def get_hotp_token(
+    secret,
+    intervals_no,
+):
+    key = base64.b32decode(
+        secret,
+        True,
+    )
+    msg = struct.pack(
+        ">Q",
+        intervals_no,
+    )
     h = bytes(hmac.new(key, msg, hashlib.sha1).digest())
     o = h[19] & 15
     h = (struct.unpack(">I", h[o : o + 4])[0] & 0x7FFFFFFF) % 1000000
@@ -28,29 +33,39 @@ def get_hotp_token(secret, intervals_no):
 
 
 def get_totp_token(secret):
-    value = get_hotp_token(secret, intervals_no=int(time.time()) // 30)
+    value = get_hotp_token(
+        secret,
+        intervals_no=int(time.time()) // 30,
+    )
     # 6 digits for totp token (pad with 0 char)
-    return str(value).rjust(6, "0")
+    return str(value).rjust(
+        6,
+        "0",
+    )
 
 
 class Guacamole:
     def __init__(
         self,
-        hostname,
-        username,
-        password,
+        hostname: str,
+        username: str,
+        password: str,
         secret=None,
-        method="https",
-        url_path="/",
+        method: str ="https",
+        port: int =443,
+        url_path: str ="/",
         default_datasource=None,
-        cookies=False,
-        verify=True,
+        cookies: bool =False,
+        verify:bool =True,
     ):
-        if method.lower() not in ["https", "http"]:
+        if method.lower() not in [
+            "https",
+            "http",
+        ]:
             raise ValueError("Only http and https methods are valid.")
         if not url_path:
             url_path = "/"
-        self.REST_API = "{}://{}{}api".format(method, hostname, url_path)
+        self.REST_API = f"{method}://{hostname}:{port}{url_path}api"
         self.username = username
         self.password = password
         self.secret = secret
@@ -68,16 +83,17 @@ class Guacamole:
         if default_datasource:
             assert (
                 default_datasource in self.datasources
-            ), "Datasource {} does not exist. Possible values: {}".format(
-                default_datasource, self.datasources
-            )
+            ), f"Datasource {default_datasource} does not exist. Possible values: {self.datasources}"
             self.primary_datasource = default_datasource
         else:
             self.primary_datasource = auth["dataSource"]
         self.token = auth["authToken"]
 
     def __authenticate(self):
-        parameters = {"username": self.username, "password": self.password}
+        parameters = {
+            "username": self.username,
+            "password": self.password,
+        }
         if self.secret is not None:
             parameters["guac-totp"] = get_totp_token(self.secret)
         r = requests.post(
@@ -90,16 +106,17 @@ class Guacamole:
         return r
 
     def __auth_request(
-        self, method, url, payload=None, url_params=None, json_response=True
+        self,
+        method,
+        url,
+        payload=None,
+        url_params=None,
+        json_response=True,
     ):
         params = [("token", self.token)]
         if url_params:
             params += url_params
-        logger.debug(
-            "{method} {url} - Params: {params}- Payload: {payload}".format(
-                method=method, url=url, params=params, payload=payload
-            )
-        )
+        logger.debug(f"{method} {url} - Params: {params}- Payload: {payload}")
         r = requests.request(
             method=method,
             url=url,
@@ -122,12 +139,15 @@ class Guacamole:
             return r
 
     def __no_auth_request(
-        self, method, url, payload=None, url_params=None, json_response=True
+        self,
+        method,
+        url,
+        payload=None,
+        url_params=None,
+        json_response=True,
     ):
         logger.debug(
-            "{method} {url} - Params: {params}- Payload: {payload}".format(
-                method=method, url=url, params=url_params, payload=payload
-            )
+            f"{method} {url} - Params: {url_params}- Payload: {payload}"
         )
         r = requests.request(
             method=method,
@@ -153,17 +173,20 @@ class Guacamole:
     def get_connections(self, datasource=None):
         if not datasource:
             datasource = self.primary_datasource
-        params = [("permission", "UPDATE"), ("permission", "DELETE")]
+        params = [
+            ("permission", "UPDATE"),
+            ("permission", "DELETE"),
+        ]
         return self.__auth_request(
             method="GET",
-            url="{}/session/data/{}/connectionGroups/ROOT/tree".format(
-                self.REST_API, datasource
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/connectionGroups/ROOT/tree",
             url_params=params,
         )
 
     def get_connection_group_connections(
-        self, connection_group_id, datasource=None
+        self,
+        connection_group_id,
+        datasource=None,
     ):
         """Get a list of connections linked to an organizational or balancing
         connection group"""
@@ -171,54 +194,71 @@ class Guacamole:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="GET",
-            url="{}/session/data/{}/connectionGroups/{}/tree".format(
-                self.REST_API, datasource, connection_group_id
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/connectionGroups/{connection_group_id}/tree",
         )
 
-    def get_active_connections(self, datasource=None):
+    def get_active_connections(
+        self,
+        datasource=None,
+    ):
         if not datasource:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="GET",
-            url="{}/session/data/{}/activeConnections".format(
-                self.REST_API, datasource
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/activeConnections",
         )
 
-    def get_connection(self, connection_id, datasource=None):
+    def get_connection(
+        self,
+        connection_id,
+        datasource=None,
+    ):
         if not datasource:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="GET",
-            url="{}/session/data/{}/connections/{}".format(
-                self.REST_API, datasource, connection_id
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/connections/{connection_id}",
         )
 
-    def get_connection_parameters(self, connection_id, datasource=None):
+    def get_connection_parameters(
+        self,
+        connection_id,
+        datasource=None,
+    ):
         if not datasource:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="GET",
-            url="{}/session/data/{}/connections/{}/parameters".format(
-                self.REST_API, datasource, connection_id
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/connections/{connection_id}/parameters",
         )
 
-    def get_connection_full(self, connection_id, datasource=None):
+    def get_connection_full(
+        self,
+        connection_id,
+        datasource=None,
+    ):
         c = self.get_connection(connection_id, datasource)
         c["parameters"] = self.get_connection_parameters(
-            connection_id, datasource
+            connection_id,
+            datasource,
         )
         return c
 
-    def __get_connection_by_name(self, cons, name, regex=False):
+    def __get_connection_by_name(
+        self,
+        cons,
+        name,
+        regex=False,
+    ):
         # FIXME This need refactoring (DRY)
         if "childConnections" not in cons:
             if "childConnectionGroups" in cons:
                 for c in cons["childConnectionGroups"]:
-                    res = self.__get_connection_by_name(c, name, regex)
+                    res = self.__get_connection_by_name(
+                        c,
+                        name,
+                        regex,
+                    )
                     if res:
                         return res
         else:
@@ -230,23 +270,40 @@ class Guacamole:
             if not res:
                 if "childConnectionGroups" in cons:
                     for c in cons["childConnectionGroups"]:
-                        res = self.__get_connection_by_name(c, name, regex)
+                        res = self.__get_connection_by_name(
+                            c,
+                            name,
+                            regex,
+                        )
                         if res:
                             return res
             else:
                 return res[0]
 
-    def get_connection_by_name(self, name, regex=False, datasource=None):
+    def get_connection_by_name(
+        self,
+        name,
+        regex=False,
+        datasource=None,
+    ):
         """
         Get a connection by its name
         """
         cons = self.get_connections(datasource)
-        res = self.__get_connection_by_name(cons, name, regex)
+        res = self.__get_connection_by_name(
+            cons,
+            name,
+            regex,
+        )
         if not res:
-            logger.error("Could not find connection named {}".format(name))
+            logger.error(f"Could not find connection named {name}")
         return res
 
-    def add_connection(self, payload, datasource=None):
+    def add_connection(
+        self,
+        payload,
+        datasource=None,
+    ):
         """
         Add a new connection
 
@@ -291,13 +348,16 @@ class Guacamole:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="POST",
-            url="{}/session/data/{}/connections".format(
-                self.REST_API, datasource
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/connections",
             payload=payload,
         )
 
-    def edit_connection(self, connection_id, payload, datasource=None):
+    def edit_connection(
+        self,
+        connection_id,
+        payload,
+        datasource=None,
+    ):
         """
         Edit an existing connection
 
@@ -340,31 +400,38 @@ class Guacamole:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="PUT",
-            url="{}/session/data/{}/connections/{}".format(
-                self.REST_API, datasource, connection_id
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/connections/{connection_id}",
             payload=payload,
             json_response=False,
         )
 
-    def delete_connection(self, connection_id, datasource=None):
+    def delete_connection(
+        self,
+        connection_id,
+        datasource=None,
+    ):
         if not datasource:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="DELETE",
-            url="{}/session/data/{}/connections/{}".format(
-                self.REST_API, datasource, connection_id
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/connections/{connection_id}",
             json_response=False,
         )
 
-    def get_history(self, datasource=None):
+    def get_history(
+        self,
+        datasource=None,
+    ):
         if not datasource:
             datasource = self.primary_datasource
-
         raise NotImplementedError()
 
-    def __get_connection_group_by_name(self, cons, name, regex=False):
+    def __get_connection_group_by_name(
+        self,
+        cons,
+        name,
+        regex=False,
+    ):
         if (regex and re.search(name, cons["name"])) or (
             not regex and cons["name"] == name
         ):
@@ -378,42 +445,64 @@ class Guacamole:
             if res:
                 return res[0]
             for c in cons["childConnectionGroups"]:
-                res = self.__get_connection_group_by_name(c, name, regex)
+                res = self.__get_connection_group_by_name(
+                    c,
+                    name,
+                    regex,
+                )
                 if res:
                     return res
 
-    def get_connection_group_by_name(self, name, regex=False, datasource=None):
+    def get_connection_group_by_name(
+        self,
+        name,
+        regex=False,
+        datasource=None,
+    ):
         """
         Get a connection group by its name
         """
         if not datasource:
             datasource = self.primary_datasource
         cons = self.get_connections(datasource)
-        return self.__get_connection_group_by_name(cons, name, regex)
+        return self.__get_connection_group_by_name(
+            cons,
+            name,
+            regex,
+        )
 
-    def get_connection_group(self, connectiongroup_id, datasource=None):
+    def get_connection_group(
+        self,
+        connectiongroup_id,
+        datasource=None,
+    ):
         if not datasource:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="GET",
-            url="{}/session/data/{}/connectionGroups/{}".format(
-                self.REST_API, datasource, connectiongroup_id
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/connectionGroups/{connectiongroup_id}",
         )
 
-    def get_auth_json_token(self, payload):
+    def get_auth_json_token(
+        self,
+        payload,
+    ):
         """
         Submit a signed/encrypted payload (JSON) for the guacamole-auth-json extension
         Return a valid token
         """
         json_token = self.__no_auth_request(
             method="POST",
-            url=self.REST_API + "/tokens",
+            url=f"{self.REST_API}/tokens",
             payload={"data": payload},
         )
         return json_token["authToken"]
 
-    def add_connection_group(self, payload, datasource=None):
+    def add_connection_group(
+        self,
+        payload,
+        datasource=None,
+    ):
         """
         Create a new connection group
 
@@ -427,14 +516,15 @@ class Guacamole:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="POST",
-            url="{}/session/data/{}/connectionGroups".format(
-                self.REST_API, datasource
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/connectionGroups",
             payload=payload,
         )
 
     def edit_connection_group(
-        self, connection_group_id, payload, datasource=None
+        self,
+        connection_group_id,
+        payload,
+        datasource=None,
     ):
         """
         Edit an exiting connection group
@@ -449,33 +539,40 @@ class Guacamole:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="PUT",
-            url="{}/session/data/{}/connectionGroups/{}".format(
-                self.REST_API, datasource, connection_group_id
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/connectionGroups/{connection_group_id}",
             payload=payload,
             json_response=False,
         )
 
-    def delete_connection_group(self, connection_group_id, datasource=None):
+    def delete_connection_group(
+        self,
+        connection_group_id,
+        datasource=None,
+    ):
         if not datasource:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="DELETE",
-            url="{}/session/data/{}/connectionGroups/{}".format(
-                self.REST_API, datasource, connection_group_id
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/connectionGroups/{connection_group_id}",
             json_response=False,
         )
 
-    def get_users(self, datasource=None):
+    def get_users(
+        self,
+        datasource=None,
+    ):
         if not datasource:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="GET",
-            url="{}/session/data/{}/users".format(self.REST_API, datasource),
+            url=f"{self.REST_API}/session/data/{datasource}/users",
         )
 
-    def add_user(self, payload, datasource=None):
+    def add_user(
+        self,
+        payload,
+        datasource=None,
+    ):
         """
         Add/enable a user
 
@@ -495,11 +592,16 @@ class Guacamole:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="POST",
-            url="{}/session/data/{}/users".format(self.REST_API, datasource),
+            url=f"{self.REST_API}/session/data/{datasource}/users",
             payload=payload,
         )
 
-    def edit_user(self, username, payload, datasource=None):
+    def edit_user(
+        self,
+        username,
+        payload,
+        datasource=None,
+    ):
         """
         Edit a user
 
@@ -527,24 +629,28 @@ class Guacamole:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="PUT",
-            url="{}/session/data/{}/users/{}".format(
-                self.REST_API, datasource, username
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/users/{username}",
             payload=payload,
             json_response=False,
         )
 
-    def get_user(self, username, datasource=None):
+    def get_user(
+        self,
+        username,
+        datasource=None,
+    ):
         if not datasource:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="GET",
-            url="{}/session/data/{}/users/{}".format(
-                self.REST_API, datasource, username
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/users/{username}",
         )
 
-    def get_user_usergroups(self, username, datasource=None):
+    def get_user_usergroups(
+        self,
+        username,
+        datasource=None,
+    ):
         """
         List the usergroups a user belongs to
         """
@@ -552,33 +658,40 @@ class Guacamole:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="GET",
-            url="{}/session/data/{}/users/{}/userGroups".format(
-                self.REST_API, datasource, username
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/users/{username}/userGroups",
         )
 
-    def delete_user(self, username, datasource=None):
+    def delete_user(
+        self,
+        username,
+        datasource=None,
+    ):
         if not datasource:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="DELETE",
-            url="{}/session/data/{}/users/{}".format(
-                self.REST_API, datasource, username
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/users/{username}",
             json_response=False,
         )
 
-    def get_permissions(self, username, datasource=None):
+    def get_permissions(
+        self,
+        username,
+        datasource=None,
+    ):
         if not datasource:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="GET",
-            url="{}/session/data/{}/users/{}/permissions".format(
-                self.REST_API, datasource, username
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/users/{username}/permissions",
         )
 
-    def grant_permission(self, username, payload, datasource=None):
+    def grant_permission(
+        self,
+        username,
+        payload,
+        datasource=None,
+    ):
         """
         Example payload:
         [{"op":"add","path":"/systemPermissions","value":"ADMINISTER"}]
@@ -587,43 +700,55 @@ class Guacamole:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="PATCH",
-            url="{}/session/data/{}/users/{}/permissions".format(
-                self.REST_API, datasource, username
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/users/{username}/permissions",
             payload=payload,
             json_response=False,
         )
 
     def get_sharing_profile_parameters(
-        self, sharing_profile_id, datasource=None
+        self,
+        sharing_profile_id,
+        datasource=None,
     ):
         if not datasource:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="GET",
-            url="{}/session/data/{}/sharingProfiles/{}/parameters".format(
-                self.REST_API, datasource, sharing_profile_id
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/sharingProfiles/{sharing_profile_id}/parameters",
         )
 
-    def get_sharing_profile_full(self, sharing_profile_id, datasource=None):
-        s = self.get_sharing_profile(sharing_profile_id, datasource)
+    def get_sharing_profile_full(
+        self,
+        sharing_profile_id,
+        datasource=None,
+    ):
+        s = self.get_sharing_profile(
+            sharing_profile_id,
+            datasource,
+        )
         s["parameters"] = self.get_sharing_profile_parameters(
-            sharing_profile_id, datasource
+            sharing_profile_id,
+            datasource,
         )
         return s
 
-    def get_sharing_profile(self, sharing_profile_id, datasource=None):
+    def get_sharing_profile(
+        self,
+        sharing_profile_id,
+        datasource=None,
+    ):
         if not datasource:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="GET",
-            url="{}/session/data/{}/sharingProfiles/{}".format(
-                self.REST_API, datasource, sharing_profile_id
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/sharingProfiles/{sharing_profile_id}",
         )
 
-    def add_sharing_profile(self, payload, datasource=None):
+    def add_sharing_profile(
+        self,
+        payload,
+        datasource=None,
+    ):
         """
         Add/enable a sharing profile
 
@@ -637,24 +762,27 @@ class Guacamole:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="POST",
-            url="{}/session/data/{}/sharingProfiles".format(
-                self.REST_API, datasource
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/sharingProfiles",
             payload=payload,
         )
 
-    def delete_sharing_profile(self, sharing_profile_id, datasource=None):
+    def delete_sharing_profile(
+        self,
+        sharing_profile_id,
+        datasource=None,
+    ):
         if not datasource:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="DELETE",
-            url="{}/session/data/{}/sharingProfiles/{}".format(
-                self.REST_API, datasource, sharing_profile_id
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/sharingProfiles/{sharing_profile_id}",
             json_response=False,
         )
 
-    def get_user_groups(self, datasource=None):
+    def get_user_groups(
+        self,
+        datasource=None,
+    ):
         """
         List all user groups
         """
@@ -662,12 +790,14 @@ class Guacamole:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="GET",
-            url="{}/session/data/{}/userGroups".format(
-                self.REST_API, datasource
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/userGroups",
         )
 
-    def add_group(self, payload, datasource=None):
+    def add_group(
+        self,
+        payload,
+        datasource=None,
+    ):
         """
         Add/enable a user group
 
@@ -680,24 +810,28 @@ class Guacamole:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="POST",
-            url="{}/session/data/{}/userGroups".format(
-                self.REST_API, datasource
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/userGroups",
             payload=payload,
         )
 
-    def delete_group(self, usergroup, datasource=None):
+    def delete_group(
+        self,
+        usergroup,
+        datasource=None,
+    ):
         if not datasource:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="DELETE",
-            url="{}/session/data/{}/userGroups/{}".format(
-                self.REST_API, datasource, usergroup
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/userGroups/{usergroup}",
             json_response=False,
         )
 
-    def get_group(self, usergroup, datasource=None):
+    def get_group(
+        self,
+        usergroup,
+        datasource=None,
+    ):
         """
         Details of User Group
         """
@@ -705,22 +839,27 @@ class Guacamole:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="GET",
-            url="{}/session/data/{}/userGroups/{}".format(
-                self.REST_API, datasource, usergroup
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/userGroups/{usergroup}",
         )
 
-    def get_group_members(self, usergroup, datasource=None):
+    def get_group_members(
+        self,
+        usergroup,
+        datasource=None,
+    ):
         if not datasource:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="GET",
-            url="{}/session/data/{}/userGroups/{}/memberUsers".format(
-                self.REST_API, datasource, usergroup
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/userGroups/{usergroup}/memberUsers",
         )
 
-    def edit_group_members(self, usergroup, payload, datasource=None):
+    def edit_group_members(
+        self,
+        usergroup,
+        payload,
+        datasource=None,
+    ):
         """
         Add Members to User Group
         Example add payload:
@@ -732,14 +871,17 @@ class Guacamole:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="PATCH",
-            url="{}/session/data/{}/userGroups/{}/memberUsers".format(
-                self.REST_API, datasource, usergroup
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/userGroups/{usergroup}/memberUsers",
             payload=payload,
             json_response=False,
         )
 
-    def grant_group_permission(self, groupname, payload, datasource=None):
+    def grant_group_permission(
+        self,
+        groupname,
+        payload,
+        datasource=None,
+    ):
         """
         Example payload:
         [{"op":"add","path":"/systemPermissions","value":"ADMINISTER"}]
@@ -748,19 +890,19 @@ class Guacamole:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="PATCH",
-            url="{}/session/data/{}/userGroups/{}/permissions".format(
-                self.REST_API, datasource, groupname
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/userGroups/{groupname}/permissions",
             payload=payload,
             json_response=False,
         )
 
-    def get_group_permissions(self, groupname, datasource=None):
+    def get_group_permissions(
+        self,
+        groupname,
+        datasource=None,
+    ):
         if not datasource:
             datasource = self.primary_datasource
         return self.__auth_request(
             method="GET",
-            url="{}/session/data/{}/userGroups/{}/permissions".format(
-                self.REST_API, datasource, groupname
-            ),
+            url=f"{self.REST_API}/session/data/{datasource}/userGroups/{groupname}/permissions",
         )

@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from __future__ import unicode_literals
-from __future__ import print_function
-
 RDP_CONNECTION = {
     "name": "",
     "identifier": "",
@@ -82,7 +79,10 @@ VNC_CONNECTION = {
 
 SSH_CONNECTION = {
     "activeConnections": 0,
-    "attributes": {"max-connections": "", "max-connections-per-user": ""},
+    "attributes": {
+        "max-connections": "",
+        "max-connections-per-user": "",
+    },
     "identifier": "",
     "name": "",
     "parameters": {
@@ -113,11 +113,22 @@ ORG_CONNECTION_GROUP = {
     "parentIdentifier": "ROOT",
     "name": "",
     "type": "ORGANIZATIONAL",
-    "attributes": {"max-connections": "", "max-connections-per-user": ""},
+    "attributes": {
+        "max-connections": "",
+        "max-connections-per-user": "",
+    },
 }
 
 SYSTEM_PERMISSIONS = [
-    {"op": "add", "path": "/systemPermissions", "value": "ADMINISTER"}
+    {
+        "op": "add",
+        "path": "/systemPermissions",
+        "value": "ADMINISTER",
+    },
 ]
 
-ADD_READ_PERMISSION = {"op": "add", "path": "", "value": "READ"}
+ADD_READ_PERMISSION = {
+    "op": "add",
+    "path": "",
+    "value": "READ",
+}
