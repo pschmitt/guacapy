@@ -1,47 +1,35 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from simplejson.scanner import JSONDecodeError
 import logging
-import re
 import requests
-import hmac
-import base64
-import struct
-import hashlib
-import time
+from utilities import (
+    get_totp_token,
+    set_log_level,
+    requester,
+)
+from .managers import (
+    ActiveConnectionManager,
+    ConnectionGroupManager,
+    ConnectionManager,
+    SharingProfileManager,
+    UserGroupManager,
+    UserManager,
+)
 
+# Configure logging
 logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(), logging.FileHandler("app.log")],
+)
 
 
-def get_hotp_token(
-    secret,
-    intervals_no,
-):
-    key = base64.b32decode(
-        secret,
-        True,
-    )
-    msg = struct.pack(
-        ">Q",
-        intervals_no,
-    )
-    h = bytes(hmac.new(key, msg, hashlib.sha1).digest())
-    o = h[19] & 15
-    h = (struct.unpack(">I", h[o : o + 4])[0] & 0x7FFFFFFF) % 1000000
-    return h
+class GuacamoleError(Exception):
+    """Custom exception for Guacamole API errors."""
 
-
-def get_totp_token(secret):
-    value = get_hotp_token(
-        secret,
-        intervals_no=int(time.time()) // 30,
-    )
-    # 6 digits for totp token (pad with 0 char)
-    return str(value).rjust(
-        6,
-        "0",
-    )
+    pass
 
 
 class Guacamole:
@@ -50,859 +38,109 @@ class Guacamole:
         hostname: str,
         username: str,
         password: str,
-        secret=None,
-        method: str ="https",
-        port: int =443,
-        url_path: str ="/",
-        default_datasource=None,
-        cookies: bool =False,
-        verify:bool =True,
+        secret: str = None,
+        connection_protocol: str = "https",
+        connection_port: int = 443,
+        base_url_path: str = "/",
+        default_datasource: str = None,
+        use_cookies: bool = False,
+        ssl_verify: bool = True,
+        logging_level: str = "INFO",
     ):
-        if method.lower() not in [
-            "https",
-            "http",
-        ]:
-            raise ValueError("Only http and https methods are valid.")
-        if not url_path:
-            url_path = "/"
-        self.REST_API = f"{method}://{hostname}:{port}{url_path}api"
+        set_log_level(logging_level)
+
+        if connection_protocol != "https":
+            connection_protocol = "http"
+        self.method = connection_protocol
+
+        self.base_url = f"{connection_protocol}://{hostname}:{connection_port}{base_url_path}api"
         self.username = username
         self.password = password
         self.secret = secret
-        self.verify = verify
-        resp = self.__authenticate()
+
+        self.verify = ssl_verify
+        if not self.verify:
+            # Disable insecurity warnings if no verifying SSL certs.
+            import urllib3
+
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+        resp = self._authenticate()
         auth = resp.json()
         assert "authToken" in auth, "Failed to retrieve auth token"
-        assert "dataSource" in auth, "Failed to retrieve primaray data source"
+        assert "dataSource" in auth, "Failed to retrieve primary data source"
         assert "availableDataSources" in auth, "Failed to retrieve data sources"
-        self.datasources = auth["availableDataSources"]
-        if cookies:
-            self.cookies = resp.cookies
-        else:
-            self.cookies = None
+
+        self.data_sources = auth["availableDataSources"]
         if default_datasource:
             assert (
-                default_datasource in self.datasources
-            ), f"Datasource {default_datasource} does not exist. Possible values: {self.datasources}"
+                default_datasource in self.data_sources
+            ), f"Datasource {default_datasource} does not exist. Possible values: {self.data_sources}"
             self.primary_datasource = default_datasource
         else:
             self.primary_datasource = auth["dataSource"]
+
+        if use_cookies:
+            self.cookies = resp.cookies
+        else:
+            self.cookies = None
+
         self.token = auth["authToken"]
 
-    def __authenticate(self):
+    def _authenticate(self) -> requests.Response:
         parameters = {
             "username": self.username,
             "password": self.password,
         }
         if self.secret is not None:
             parameters["guac-totp"] = get_totp_token(self.secret)
-        r = requests.post(
-            url=self.REST_API + "/tokens",
+
+        response = requests.post(
+            url=f"{self.base_url}/tokens",
             data=parameters,
             verify=self.verify,
             allow_redirects=True,
         )
-        r.raise_for_status()
-        return r
+        response.raise_for_status()
 
-    def __auth_request(
-        self,
-        method,
-        url,
-        payload=None,
-        url_params=None,
-        json_response=True,
-    ):
-        params = [("token", self.token)]
-        if url_params:
-            params += url_params
-        logger.debug(f"{method} {url} - Params: {params}- Payload: {payload}")
-        r = requests.request(
-            method=method,
-            url=url,
-            params=params,
-            json=payload,
-            verify=self.verify,
-            allow_redirects=True,
-            cookies=self.cookies,
-        )
-        if not r.ok:
-            logger.error(r.content)
-        r.raise_for_status()
-        if json_response:
-            try:
-                return r.json()
-            except JSONDecodeError:
-                logger.error("Could not decode JSON response")
-                return r
-        else:
-            return r
+        return response
 
-    def __no_auth_request(
-        self,
-        method,
-        url,
-        payload=None,
-        url_params=None,
-        json_response=True,
-    ):
-        logger.debug(
-            f"{method} {url} - Params: {url_params}- Payload: {payload}"
-        )
-        r = requests.request(
-            method=method,
-            url=url,
-            params=url_params,
-            data=payload,
-            verify=self.verify,
-            allow_redirects=True,
-            cookies=self.cookies,
-        )
-        if not r.ok:
-            logger.error(r.content)
-        r.raise_for_status()
-        if json_response:
-            try:
-                return r.json()
-            except JSONDecodeError:
-                logger.error("Could not decode JSON response")
-                return r
-        else:
-            return r
-
-    def get_connections(self, datasource=None):
-        if not datasource:
-            datasource = self.primary_datasource
-        params = [
-            ("permission", "UPDATE"),
-            ("permission", "DELETE"),
-        ]
-        return self.__auth_request(
-            method="GET",
-            url=f"{self.REST_API}/session/data/{datasource}/connectionGroups/ROOT/tree",
-            url_params=params,
-        )
-
-    def get_connection_group_connections(
-        self,
-        connection_group_id,
-        datasource=None,
-    ):
-        """Get a list of connections linked to an organizational or balancing
-        connection group"""
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="GET",
-            url=f"{self.REST_API}/session/data/{datasource}/connectionGroups/{connection_group_id}/tree",
-        )
-
-    def get_active_connections(
-        self,
-        datasource=None,
-    ):
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="GET",
-            url=f"{self.REST_API}/session/data/{datasource}/activeConnections",
-        )
-
-    def get_connection(
-        self,
-        connection_id,
-        datasource=None,
-    ):
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="GET",
-            url=f"{self.REST_API}/session/data/{datasource}/connections/{connection_id}",
-        )
-
-    def get_connection_parameters(
-        self,
-        connection_id,
-        datasource=None,
-    ):
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="GET",
-            url=f"{self.REST_API}/session/data/{datasource}/connections/{connection_id}/parameters",
-        )
-
-    def get_connection_full(
-        self,
-        connection_id,
-        datasource=None,
-    ):
-        c = self.get_connection(connection_id, datasource)
-        c["parameters"] = self.get_connection_parameters(
-            connection_id,
-            datasource,
-        )
-        return c
-
-    def __get_connection_by_name(
-        self,
-        cons,
-        name,
-        regex=False,
-    ):
-        # FIXME This need refactoring (DRY)
-        if "childConnections" not in cons:
-            if "childConnectionGroups" in cons:
-                for c in cons["childConnectionGroups"]:
-                    res = self.__get_connection_by_name(
-                        c,
-                        name,
-                        regex,
-                    )
-                    if res:
-                        return res
-        else:
-            children = cons["childConnections"]
-            if regex:
-                res = [x for x in children if re.search(name, x["name"])]
-            else:
-                res = [x for x in children if x["name"] == name]
-            if not res:
-                if "childConnectionGroups" in cons:
-                    for c in cons["childConnectionGroups"]:
-                        res = self.__get_connection_by_name(
-                            c,
-                            name,
-                            regex,
-                        )
-                        if res:
-                            return res
-            else:
-                return res[0]
-
-    def get_connection_by_name(
-        self,
-        name,
-        regex=False,
-        datasource=None,
-    ):
-        """
-        Get a connection by its name
-        """
-        cons = self.get_connections(datasource)
-        res = self.__get_connection_by_name(
-            cons,
-            name,
-            regex,
-        )
-        if not res:
-            logger.error(f"Could not find connection named {name}")
-        return res
-
-    def add_connection(
+    def _get_token(
         self,
         payload,
-        datasource=None,
-    ):
-        """
-        Add a new connection
-
-        Example payload:
-        {"name":"iaas-067-mgt01 (Admin)",
-        "parentIdentifier":"4",
-        "protocol":"rdp",
-        "attributes":{"max-connections":"","max-connections-per-user":""},
-        "activeConnections":0,
-        "parameters":{
-            "port":"3389",
-            "enable-menu-animations":"true",
-            "enable-desktop-composition":"true",
-            "hostname":"iaas-067-mgt01.vcloud",
-            "color-depth":"32",
-            "enable-font-smoothing":"true",
-            "ignore-cert":"true",
-            "enable-drive":"true",
-            "enable-full-window-drag":"true",
-            "security":"any",
-            "password":"XXX",
-            "enable-wallpaper":"true",
-            "create-drive-path":"true",
-            "enable-theming":"true",
-            "username":"Administrator",
-            "console":"true",
-            "disable-audio":"true",
-            "domain":"iaas-067-mgt01.vcloud",
-            "drive-path":"/var/tmp",
-            "disable-auth":"",
-            "server-layout":"",
-            "width":"",
-            "height":"",
-            "dpi":"",
-            "console-audio":"",
-            "enable-printing":"",
-            "preconnection-id":"",
-            "enable-sftp":"",
-            "sftp-port":""}}
-        """
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="POST",
-            url=f"{self.REST_API}/session/data/{datasource}/connections",
-            payload=payload,
-        )
-
-    def edit_connection(
-        self,
-        connection_id,
-        payload,
-        datasource=None,
-    ):
-        """
-        Edit an existing connection
-
-        Example payload:
-        {"name":"test",
-        "identifier":"7",
-        "parentIdentifier":"ROOT",
-        "protocol":"rdp",
-        "attributes":{"max-connections":"","max-connections-per-user":""},
-        "activeConnections":0,
-        "parameters":{
-            "disable-audio":"true",
-            "server-layout":"fr-fr-azerty",
-            "domain":"dt",
-            "hostname":"127.0.0.1",
-            "enable-font-smoothing":"true",
-            "security":"rdp",
-            "port":"3389",
-            "disable-auth":"",
-            "ignore-cert":"",
-            "console":"",
-            "width":"",
-            "height":"",
-            "dpi":"",
-            "color-depth":"",
-            "console-audio":"",
-            "enable-printing":"",
-            "enable-drive":"",
-            "create-drive-path":"",
-            "enable-wallpaper":"",
-            "enable-theming":"",
-            "enable-full-window-drag":"",
-            "enable-desktop-composition":"",
-            "enable-menu-animations":"",
-            "preconnection-id":"",
-            "enable-sftp":"",
-            "sftp-port":""}}
-        """
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="PUT",
-            url=f"{self.REST_API}/session/data/{datasource}/connections/{connection_id}",
-            payload=payload,
-            json_response=False,
-        )
-
-    def delete_connection(
-        self,
-        connection_id,
-        datasource=None,
-    ):
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="DELETE",
-            url=f"{self.REST_API}/session/data/{datasource}/connections/{connection_id}",
-            json_response=False,
-        )
-
-    def get_history(
-        self,
-        datasource=None,
-    ):
-        if not datasource:
-            datasource = self.primary_datasource
-        raise NotImplementedError()
-
-    def __get_connection_group_by_name(
-        self,
-        cons,
-        name,
-        regex=False,
-    ):
-        if (regex and re.search(name, cons["name"])) or (
-            not regex and cons["name"] == name
-        ):
-            return cons
-        if "childConnectionGroups" in cons:
-            children = cons["childConnectionGroups"]
-            if regex:
-                res = [x for x in children if re.search(name, x["name"])]
-            else:
-                res = [x for x in children if x["name"] == name]
-            if res:
-                return res[0]
-            for c in cons["childConnectionGroups"]:
-                res = self.__get_connection_group_by_name(
-                    c,
-                    name,
-                    regex,
-                )
-                if res:
-                    return res
-
-    def get_connection_group_by_name(
-        self,
-        name,
-        regex=False,
-        datasource=None,
-    ):
-        """
-        Get a connection group by its name
-        """
-        if not datasource:
-            datasource = self.primary_datasource
-        cons = self.get_connections(datasource)
-        return self.__get_connection_group_by_name(
-            cons,
-            name,
-            regex,
-        )
-
-    def get_connection_group(
-        self,
-        connectiongroup_id,
-        datasource=None,
-    ):
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="GET",
-            url=f"{self.REST_API}/session/data/{datasource}/connectionGroups/{connectiongroup_id}",
-        )
-
-    def get_auth_json_token(
-        self,
-        payload,
-    ):
+    ) -> str:
         """
         Submit a signed/encrypted payload (JSON) for the guacamole-auth-json extension
         Return a valid token
         """
-        json_token = self.__no_auth_request(
+        json_token = requester(
             method="POST",
-            url=f"{self.REST_API}/tokens",
+            url=f"{self.base_url}/tokens",
             payload={"data": payload},
+            verify=self.verify,
         )
         return json_token["authToken"]
 
-    def add_connection_group(
-        self,
-        payload,
-        datasource=None,
-    ):
-        """
-        Create a new connection group
+    @property
+    def active_connections(self) -> ActiveConnectionManager:
+        return ActiveConnectionManager(self)
 
-        Example payload:
-        {"parentIdentifier":"ROOT",
-        "name":"iaas-099 (Test)",
-        "type":"ORGANIZATIONAL",
-        "attributes":{"max-connections":"","max-connections-per-user":""}}
-        """
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="POST",
-            url=f"{self.REST_API}/session/data/{datasource}/connectionGroups",
-            payload=payload,
-        )
+    @property
+    def connection_groups(self) -> ConnectionGroupManager:
+        return ConnectionGroupManager(self)
 
-    def edit_connection_group(
-        self,
-        connection_group_id,
-        payload,
-        datasource=None,
-    ):
-        """
-        Edit an exiting connection group
+    @property
+    def connections(self) -> ConnectionManager:
+        return ConnectionManager(self)
 
-        Example payload:
-        {"parentIdentifier":"ROOT",
-        "name":"iaas-099 (Test)",
-        "type":"ORGANIZATIONAL",
-        "attributes":{"max-connections":"","max-connections-per-user":""}}
-        """
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="PUT",
-            url=f"{self.REST_API}/session/data/{datasource}/connectionGroups/{connection_group_id}",
-            payload=payload,
-            json_response=False,
-        )
+    @property
+    def sharing_profiles(self) -> SharingProfileManager:
+        return SharingProfileManager(self)
 
-    def delete_connection_group(
-        self,
-        connection_group_id,
-        datasource=None,
-    ):
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="DELETE",
-            url=f"{self.REST_API}/session/data/{datasource}/connectionGroups/{connection_group_id}",
-            json_response=False,
-        )
+    @property
+    def user_groups(self) -> UserGroupManager:
+        return UserGroupManager(self)
 
-    def get_users(
-        self,
-        datasource=None,
-    ):
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="GET",
-            url=f"{self.REST_API}/session/data/{datasource}/users",
-        )
-
-    def add_user(
-        self,
-        payload,
-        datasource=None,
-    ):
-        """
-        Add/enable a user
-
-        Example payload:
-        {"username":"test"
-         "password":"testpwd",
-         "attributes":{
-                "disabled":"",
-                "expired":"",
-                "access-window-start":"",
-                "access-window-end":"",
-                "valid-from":"",
-                "valid-until":"",
-                "timezone":null}}
-        """
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="POST",
-            url=f"{self.REST_API}/session/data/{datasource}/users",
-            payload=payload,
-        )
-
-    def edit_user(
-        self,
-        username,
-        payload,
-        datasource=None,
-    ):
-        """
-        Edit a user
-
-        Example payload:
-        {
-            "username": "username",
-            "attributes": {
-                "guac-email-address": null,
-                "guac-organizational-role": null,
-                "guac-full-name": null,
-                "expired": "",
-                "timezone": null,
-                "access-window-start": "",
-                "guac-organization": null,
-                "access-window-end": "",
-                "disabled": "",
-                "valid-until": "",
-                "valid-from": ""
-            },
-            "lastActive": 1588030687251,
-            "password": "password"
-        }
-        """
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="PUT",
-            url=f"{self.REST_API}/session/data/{datasource}/users/{username}",
-            payload=payload,
-            json_response=False,
-        )
-
-    def get_user(
-        self,
-        username,
-        datasource=None,
-    ):
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="GET",
-            url=f"{self.REST_API}/session/data/{datasource}/users/{username}",
-        )
-
-    def get_user_usergroups(
-        self,
-        username,
-        datasource=None,
-    ):
-        """
-        List the usergroups a user belongs to
-        """
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="GET",
-            url=f"{self.REST_API}/session/data/{datasource}/users/{username}/userGroups",
-        )
-
-    def delete_user(
-        self,
-        username,
-        datasource=None,
-    ):
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="DELETE",
-            url=f"{self.REST_API}/session/data/{datasource}/users/{username}",
-            json_response=False,
-        )
-
-    def get_permissions(
-        self,
-        username,
-        datasource=None,
-    ):
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="GET",
-            url=f"{self.REST_API}/session/data/{datasource}/users/{username}/permissions",
-        )
-
-    def grant_permission(
-        self,
-        username,
-        payload,
-        datasource=None,
-    ):
-        """
-        Example payload:
-        [{"op":"add","path":"/systemPermissions","value":"ADMINISTER"}]
-        """
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="PATCH",
-            url=f"{self.REST_API}/session/data/{datasource}/users/{username}/permissions",
-            payload=payload,
-            json_response=False,
-        )
-
-    def get_sharing_profile_parameters(
-        self,
-        sharing_profile_id,
-        datasource=None,
-    ):
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="GET",
-            url=f"{self.REST_API}/session/data/{datasource}/sharingProfiles/{sharing_profile_id}/parameters",
-        )
-
-    def get_sharing_profile_full(
-        self,
-        sharing_profile_id,
-        datasource=None,
-    ):
-        s = self.get_sharing_profile(
-            sharing_profile_id,
-            datasource,
-        )
-        s["parameters"] = self.get_sharing_profile_parameters(
-            sharing_profile_id,
-            datasource,
-        )
-        return s
-
-    def get_sharing_profile(
-        self,
-        sharing_profile_id,
-        datasource=None,
-    ):
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="GET",
-            url=f"{self.REST_API}/session/data/{datasource}/sharingProfiles/{sharing_profile_id}",
-        )
-
-    def add_sharing_profile(
-        self,
-        payload,
-        datasource=None,
-    ):
-        """
-        Add/enable a sharing profile
-
-        Example payload:
-        {"primaryConnectionIdentifier":"8",
-        "name":"share",
-        "parameters":{"read-only":""},
-        "attributes":{}}'
-        """
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="POST",
-            url=f"{self.REST_API}/session/data/{datasource}/sharingProfiles",
-            payload=payload,
-        )
-
-    def delete_sharing_profile(
-        self,
-        sharing_profile_id,
-        datasource=None,
-    ):
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="DELETE",
-            url=f"{self.REST_API}/session/data/{datasource}/sharingProfiles/{sharing_profile_id}",
-            json_response=False,
-        )
-
-    def get_user_groups(
-        self,
-        datasource=None,
-    ):
-        """
-        List all user groups
-        """
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="GET",
-            url=f"{self.REST_API}/session/data/{datasource}/userGroups",
-        )
-
-    def add_group(
-        self,
-        payload,
-        datasource=None,
-    ):
-        """
-        Add/enable a user group
-
-        Example payload:
-        {"identifier":"test"
-         "attributes":{
-                "disabled":""}}
-        """
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="POST",
-            url=f"{self.REST_API}/session/data/{datasource}/userGroups",
-            payload=payload,
-        )
-
-    def delete_group(
-        self,
-        usergroup,
-        datasource=None,
-    ):
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="DELETE",
-            url=f"{self.REST_API}/session/data/{datasource}/userGroups/{usergroup}",
-            json_response=False,
-        )
-
-    def get_group(
-        self,
-        usergroup,
-        datasource=None,
-    ):
-        """
-        Details of User Group
-        """
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="GET",
-            url=f"{self.REST_API}/session/data/{datasource}/userGroups/{usergroup}",
-        )
-
-    def get_group_members(
-        self,
-        usergroup,
-        datasource=None,
-    ):
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="GET",
-            url=f"{self.REST_API}/session/data/{datasource}/userGroups/{usergroup}/memberUsers",
-        )
-
-    def edit_group_members(
-        self,
-        usergroup,
-        payload,
-        datasource=None,
-    ):
-        """
-        Add Members to User Group
-        Example add payload:
-        [{"op":"add","path":"/","value":"username"}]
-        Example remove payload:
-        [{"op":"remove","path":"/","value":"username"}]
-        """
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="PATCH",
-            url=f"{self.REST_API}/session/data/{datasource}/userGroups/{usergroup}/memberUsers",
-            payload=payload,
-            json_response=False,
-        )
-
-    def grant_group_permission(
-        self,
-        groupname,
-        payload,
-        datasource=None,
-    ):
-        """
-        Example payload:
-        [{"op":"add","path":"/systemPermissions","value":"ADMINISTER"}]
-        """
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="PATCH",
-            url=f"{self.REST_API}/session/data/{datasource}/userGroups/{groupname}/permissions",
-            payload=payload,
-            json_response=False,
-        )
-
-    def get_group_permissions(
-        self,
-        groupname,
-        datasource=None,
-    ):
-        if not datasource:
-            datasource = self.primary_datasource
-        return self.__auth_request(
-            method="GET",
-            url=f"{self.REST_API}/session/data/{datasource}/userGroups/{groupname}/permissions",
-        )
+    @property
+    def users(self) -> UserManager:
+        return UserManager(self)
