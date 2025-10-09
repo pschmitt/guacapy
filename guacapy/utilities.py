@@ -7,36 +7,52 @@ import logging
 import re
 import requests
 from simplejson.scanner import JSONDecodeError
+from typing import Union, Dict, List, Any
 
 # Get the logger for this module
 logger = logging.getLogger(__name__)
 
 
 def requester(
-    method: str,
+    client,
     url: str,
+    method: str = "GET",
     params: dict = None,
-    token: str = None,
     payload: dict = None,
-    verify: bool = True,
+    token: str = None,
+    verify: bool = False,
     allow_redirects: bool = True,
     cookies: dict = None,
     json_response: bool = True,
-):
+) -> Union[requests.Response, Dict[str, Any], List[Any]]:
     if params is None:
-        params = []
+        _params = []
+    else:
+        _params = params
     if token:
-        params += [("token", token)]
+        _token = token
+    else:
+        _token = client.token
+    if verify:
+        _verify = verify
+    else:
+        _verify = client.verify
+    if cookies:
+        _cookies = cookies
+    else:
+        _cookies = client.cookies
 
-    logger.debug(f"{method} {url} - Params: {params}- Payload: {payload}")
+    _params += [("token", _token)]
+
+    logger.debug(f"{method} {url} - Params: {_params}- Payload: {payload}")
     r = requests.request(
         method=method,
         url=url,
-        params=params,
+        params=_params,
         json=payload,
-        verify=verify,
+        verify=_verify,
         allow_redirects=allow_redirects,
-        cookies=cookies,
+        cookies=_cookies,
     )
     if not r.ok:
         logger.error(r.content)
@@ -54,7 +70,7 @@ def requester(
 def get_hotp_token(
     secret,
     intervals_no,
-):
+) -> bytes:
     key = base64.b32decode(
         secret,
         True,
@@ -69,7 +85,7 @@ def get_hotp_token(
     return h
 
 
-def get_totp_token(secret):
+def get_totp_token(secret: str) -> str:
     value = get_hotp_token(
         secret,
         intervals_no=int(time.time()) // 30,
@@ -174,9 +190,6 @@ def get_connection_group_by_name(
     )
 
 
-import logging
-
-
 def set_log_level(
     level_str: str,
     logger_name: str = "",
@@ -211,13 +224,13 @@ def set_log_level(
         )
 
     # Get the logger (root logger if logger_name is empty)
-    logger = logging.getLogger(logger_name)
+    my_logger = logging.getLogger(logger_name)
 
     # Set the logging level
-    logger.setLevel(level_map[level_str])
+    my_logger.setLevel(level_map[level_str])
 
     # Log confirmation at the new level
-    logger.log(
+    my_logger.log(
         level_map[level_str],
         f"Logging level for '{logger_name or 'root'}' set to {level_str}",
     )

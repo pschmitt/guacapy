@@ -44,7 +44,7 @@ class Guacamole:
         base_url_path: str = "/",
         default_datasource: str = None,
         use_cookies: bool = False,
-        ssl_verify: bool = True,
+        ssl_verify: bool = False,
         logging_level: str = "INFO",
     ):
         set_log_level(logging_level)
@@ -114,10 +114,10 @@ class Guacamole:
         Return a valid token
         """
         json_token = requester(
+            client=self,
             method="POST",
             url=f"{self.base_url}/tokens",
             payload={"data": payload},
-            verify=self.verify,
         )
         return json_token["authToken"]
 

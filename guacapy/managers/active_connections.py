@@ -1,7 +1,5 @@
 import logging
-
 import requests
-
 from utilities import requester
 
 # Get the logger for this module
@@ -21,10 +19,9 @@ class ActiveConnectionManager:
             self.datasource = self.client.primary_datasource
         self.url = f"{self.client.base_url}/session/data/{self.datasource}/activeConnections"
 
-    def list(self):
+    def list(self) -> requests.Response:
         result = requester(
-            method="GET",
+            client=self.client,
             url=self.url,
-            token=self.client.token,
-            verify=self.client.verify,
         )
+        return result
