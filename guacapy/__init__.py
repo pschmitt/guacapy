@@ -6,6 +6,9 @@ Guacamole REST API, enabling management of users, connections, connection groups
 resources through manager classes (e.g., `UserManager`, `ConnectionManager`). The package
 version follows a date-based format (major.YYYYMMDD.patch).
 
+This package uses the API endpoints documented as here:
+https://github.com/ridvanaltun/guacamole-rest-api-documentation
+
 Examples
 --------
 >>> from guacapy import Guacamole

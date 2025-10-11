@@ -41,6 +41,7 @@ from .managers import (
 # Get the logger for this module
 logger = logging.getLogger(__name__)
 
+
 class GuacamoleError(Exception):
     """
     Custom exception for Guacamole API errors.
@@ -50,7 +51,9 @@ class GuacamoleError(Exception):
     message : str
         The error message describing the issue.
     """
+
     pass
+
 
 class Guacamole:
     def __init__(
@@ -104,7 +107,9 @@ class Guacamole:
             configure_logging(logging_level)
 
         if connection_protocol not in {"http", "https"}:
-            raise GuacamoleError(f"Invalid connection protocol: {connection_protocol}. Must be 'http' or 'https'.")
+            raise GuacamoleError(
+                f"Invalid connection protocol: {connection_protocol}. Must be 'http' or 'https'."
+            )
         self.protocol = connection_protocol
 
         self.base_url = f"{connection_protocol}://{hostname}:{connection_port}{base_url_path}api"
@@ -118,8 +123,13 @@ class Guacamole:
 
         response = self._authenticate()
         auth_response = response.json()
-        if not all(key in auth_response for key in ("authToken", "dataSource", "availableDataSources")):
-            raise GuacamoleError("Authentication failed: Missing required fields in response")
+        if not all(
+            key in auth_response
+            for key in ("authToken", "dataSource", "availableDataSources")
+        ):
+            raise GuacamoleError(
+                "Authentication failed: Missing required fields in response"
+            )
 
         self.data_sources = auth_response["availableDataSources"]
         if default_datasource:
@@ -170,7 +180,9 @@ class Guacamole:
             response.raise_for_status()
         except requests.HTTPError as e:
             if response.status_code == 401:
-                raise GuacamoleError("Authentication failed: Invalid username or password") from e
+                raise GuacamoleError(
+                    "Authentication failed: Invalid username or password"
+                ) from e
             raise
         return response
 

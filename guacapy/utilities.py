@@ -30,6 +30,7 @@ from typing import Union, Dict, List, Any, Optional
 # Get the logger for this module
 logger = logging.getLogger(__name__)
 
+
 def configure_logging(
     level: Optional[str] = None,
     logger_name: str = "",
@@ -69,11 +70,15 @@ def configure_logging(
     level = level.upper()
     if level not in level_map:
         valid_levels = ", ".join(level_map.keys())
-        raise ValueError(f"Invalid logging level '{level}'. Valid options are: {valid_levels}")
+        raise ValueError(
+            f"Invalid logging level '{level}'. Valid options are: {valid_levels}"
+        )
 
     my_logger = logging.getLogger(logger_name)
     my_logger.setLevel(level_map[level])
-    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(formatter)
     my_logger.handlers = [stream_handler]
@@ -81,7 +86,11 @@ def configure_logging(
         file_handler = logging.FileHandler(log_file)
         file_handler.setFormatter(formatter)
         my_logger.handlers.append(file_handler)
-    my_logger.log(level_map[level], f"Logging configured for '{logger_name or 'root'}' at level {level}")
+    my_logger.log(
+        level_map[level],
+        f"Logging configured for '{logger_name or 'root'}' at level {level}",
+    )
+
 
 def requester(
     guac_client: Any,
@@ -151,7 +160,9 @@ def requester(
         cookies=cookies,
     )
     if not response.ok:
-        logger.error(f"Request failed with status {response.status_code}: {response.content}")
+        logger.error(
+            f"Request failed with status {response.status_code}: {response.content}"
+        )
     response.raise_for_status()
     if json_response:
         try:
@@ -160,6 +171,7 @@ def requester(
             logger.error("Could not decode JSON response")
             raise
     return response
+
 
 def get_hotp_token(
     secret: str,
@@ -186,6 +198,7 @@ def get_hotp_token(
     o = h[19] & 15
     return (struct.unpack(">I", h[o : o + 4])[0] & 0x7FFFFFFF) % 1000000
 
+
 def get_totp_token(secret: str) -> str:
     """
     Generate a TOTP token for two-factor authentication.
@@ -207,6 +220,7 @@ def get_totp_token(secret: str) -> str:
     """
     value = get_hotp_token(secret, intervals_no=int(time.time()) // 30)
     return str(value).rjust(6, "0")
+
 
 def _find_by_name(
     guac_client: Any,
@@ -242,7 +256,9 @@ def _find_by_name(
     if key not in data:
         if child_key in data:
             for child in data[child_key]:
-                result = _find_by_name(guac_client, child, name, key, child_key, regex)
+                result = _find_by_name(
+                    guac_client, child, name, key, child_key, regex
+                )
                 if result:
                     return result
     else:
@@ -255,12 +271,17 @@ def _find_by_name(
             return result[0]
         if child_key in data:
             for child in data[child_key]:
-                result = _find_by_name(guac_client, child, name, key, child_key, regex)
+                result = _find_by_name(
+                    guac_client, child, name, key, child_key, regex
+                )
                 if result:
                     return result
-    if (regex and re.search(name, data["name"])) or (not regex and data["name"] == name):
+    if (regex and re.search(name, data["name"])) or (
+        not regex and data["name"] == name
+    ):
         return data
     return None
+
 
 def _find_connection_by_name(
     guac_client: Any,
@@ -287,7 +308,15 @@ def _find_connection_by_name(
     Optional[Dict[str, Any]]
         The connection dictionary if found, else None.
     """
-    return _find_by_name(guac_client, connection_data, name, "childConnections", "childConnectionGroups", regex)
+    return _find_by_name(
+        guac_client,
+        connection_data,
+        name,
+        "childConnections",
+        "childConnectionGroups",
+        regex,
+    )
+
 
 def _find_connection_group_by_name(
     guac_client: Any,
@@ -314,7 +343,15 @@ def _find_connection_group_by_name(
     Optional[Dict[str, Any]]
         The connection group dictionary if found, else None.
     """
-    return _find_by_name(guac_client, group_data, name, "childConnectionGroups", "childConnectionGroups", regex)
+    return _find_by_name(
+        guac_client,
+        group_data,
+        name,
+        "childConnectionGroups",
+        "childConnectionGroups",
+        regex,
+    )
+
 
 def get_connection_group_by_name(
     guac_client: Any,

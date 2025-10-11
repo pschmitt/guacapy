@@ -22,6 +22,7 @@ from typing import Dict, List, Any, Optional
 # Get the logger for this module
 logger = logging.getLogger(__name__)
 
+
 class UserManager:
     def __init__(
         self,
@@ -43,7 +44,9 @@ class UserManager:
             self.datasource = datasource
         else:
             self.datasource = self.guac_client.primary_datasource
-        self.url = f"{self.guac_client.base_url}/session/data/{self.datasource}/users"
+        self.url = (
+            f"{self.guac_client.base_url}/session/data/{self.datasource}/users"
+        )
 
     def list(self) -> Dict[str, Any]:
         """
@@ -362,7 +365,11 @@ class UserManager:
             }
         ]
         """
-        path = "/connectionGroupPermissions" if is_connection_group else "/connectionPermissions"
+        path = (
+            "/connectionGroupPermissions"
+            if is_connection_group
+            else "/connectionPermissions"
+        )
         payload = [
             {
                 "op": "add",
@@ -427,7 +434,11 @@ class UserManager:
             }
         ]
         """
-        path = "/connectionGroupPermissions" if is_connection_group else "/connectionPermissions"
+        path = (
+            "/connectionGroupPermissions"
+            if is_connection_group
+            else "/connectionPermissions"
+        )
         payload = [
             {
                 "op": "remove",
