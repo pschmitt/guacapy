@@ -1,11 +1,32 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+"""
+Guacamole API client module.
+
+This module provides the `Guacamole` class for authenticating with and interacting with the
+Guacamole REST API, along with manager classes for handling resources like users, connections,
+and groups.
+
+Examples
+--------
+>>> from guacapy import Guacamole
+>>> client = Guacamole(
+...     hostname="guacamole.example.com",
+...     username="admin",
+...     password="secret",
+...     datasource="mysql"
+... )
+>>> users = client.users.list()
+"""
+
 import logging
 import requests
+import urllib3
+from typing import Any, Dict, Optional
 from utilities import (
     get_totp_token,
-    set_log_level,
+    configure_logging,
     requester,
 )
 from .managers import (
@@ -17,20 +38,19 @@ from .managers import (
     UserManager,
 )
 
-# Configure logging
+# Get the logger for this module
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.StreamHandler(), logging.FileHandler("app.log")],
-)
-
 
 class GuacamoleError(Exception):
-    """Custom exception for Guacamole API errors."""
+    """
+    Custom exception for Guacamole API errors.
 
+    Parameters
+    ----------
+    message : str
+        The error message describing the issue.
+    """
     pass
-
 
 class Guacamole:
     def __init__(
@@ -38,19 +58,52 @@ class Guacamole:
         hostname: str,
         username: str,
         password: str,
-        secret: str = None,
+        secret: Optional[str] = None,
         connection_protocol: str = "https",
         connection_port: int = 443,
         base_url_path: str = "/",
-        default_datasource: str = None,
+        default_datasource: Optional[str] = None,
         use_cookies: bool = False,
         ssl_verify: bool = False,
         logging_level: str = "INFO",
     ):
-        set_log_level(logging_level)
+        """
+        Initialize the Guacamole client for interacting with the Guacamole REST API.
 
-        if connection_protocol != "https":
-            connection_protocol = "http"
+        Parameters
+        ----------
+        hostname : str
+            The hostname of the Guacamole server (e.g., "guacamole.example.com").
+        username : str
+            The username for authentication.
+        password : str
+            The password for authentication.
+        secret : Optional[str], optional
+            The TOTP secret for two-factor authentication, if required. Defaults to None.
+        connection_protocol : str, optional
+            The protocol for the API connection ("http" or "https"). Defaults to "https".
+        connection_port : int, optional
+            The port for the API connection. Defaults to 443.
+        base_url_path : str, optional
+            The base path for the API (e.g., "/"). Defaults to "/".
+        default_datasource : Optional[str], optional
+            The default data source identifier. Defaults to the primary data source from authentication.
+        use_cookies : bool, optional
+            Whether to use cookies for authentication. Defaults to False.
+        ssl_verify : bool, optional
+            Whether to verify SSL certificates. Defaults to False.
+        logging_level : str, optional
+            The logging level (e.g., "DEBUG", "INFO"). Defaults to "INFO".
+
+        Raises
+        ------
+        GuacamoleError
+            If authentication fails or the specified data source is invalid.
+        """
+        configure_logging(logging_level)
+
+        if connection_protocol not in {"http", "https"}:
+            raise GuacamoleError(f"Invalid connection protocol: {connection_protocol}. Must be 'http' or 'https'.")
         self.method = connection_protocol
 
         self.base_url = f"{connection_protocol}://{hostname}:{connection_port}{base_url_path}api"
@@ -60,34 +113,40 @@ class Guacamole:
 
         self.verify = ssl_verify
         if not self.verify:
-            # Disable insecurity warnings if no verifying SSL certs.
-            import urllib3
-
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
         resp = self._authenticate()
         auth = resp.json()
-        assert "authToken" in auth, "Failed to retrieve auth token"
-        assert "dataSource" in auth, "Failed to retrieve primary data source"
-        assert "availableDataSources" in auth, "Failed to retrieve data sources"
+        if not all(key in auth for key in ("authToken", "dataSource", "availableDataSources")):
+            raise GuacamoleError("Authentication failed: Missing required fields in response")
 
         self.data_sources = auth["availableDataSources"]
         if default_datasource:
-            assert (
-                default_datasource in self.data_sources
-            ), f"Datasource {default_datasource} does not exist. Possible values: {self.data_sources}"
+            if default_datasource not in self.data_sources:
+                raise GuacamoleError(
+                    f"Datasource {default_datasource} does not exist. Possible values: {self.data_sources}"
+                )
             self.primary_datasource = default_datasource
         else:
             self.primary_datasource = auth["dataSource"]
 
-        if use_cookies:
-            self.cookies = resp.cookies
-        else:
-            self.cookies = None
-
+        self.cookies = resp.cookies if use_cookies else None
         self.token = auth["authToken"]
 
     def _authenticate(self) -> requests.Response:
+        """
+        Authenticate with the Guacamole API to obtain an authentication token.
+
+        Returns
+        -------
+        requests.Response
+            The HTTP response containing the authentication token and data source details (200 OK).
+
+        Raises
+        ------
+        requests.HTTPError
+            If the authentication request fails.
+        """
         parameters = {
             "username": self.username,
             "password": self.password,
@@ -102,16 +161,29 @@ class Guacamole:
             allow_redirects=True,
         )
         response.raise_for_status()
-
         return response
 
     def _get_token(
         self,
-        payload,
+        payload: Dict[str, Any],
     ) -> str:
         """
-        Submit a signed/encrypted payload (JSON) for the guacamole-auth-json extension
-        Return a valid token
+        Submit a signed/encrypted payload for the guacamole-auth-json extension to obtain a token.
+
+        Parameters
+        ----------
+        payload : Dict[str, Any]
+            The JSON payload to submit for authentication.
+
+        Returns
+        -------
+        str
+            The authentication token received from the API (200 OK).
+
+        Examples
+        --------
+        >>> payload = {"data": {"username": "john_doe", "password": "secret"}}
+        >>> token = client._get_token(payload)
         """
         json_token = requester(
             client=self,
@@ -123,24 +195,72 @@ class Guacamole:
 
     @property
     def active_connections(self) -> ActiveConnectionManager:
+        """
+        Get the manager for active connections.
+
+        Returns
+        -------
+        ActiveConnectionManager
+            The manager instance for handling active connections.
+        """
         return ActiveConnectionManager(self)
 
     @property
     def connection_groups(self) -> ConnectionGroupManager:
+        """
+        Get the manager for connection groups.
+
+        Returns
+        -------
+        ConnectionGroupManager
+            The manager instance for handling connection groups.
+        """
         return ConnectionGroupManager(self)
 
     @property
     def connections(self) -> ConnectionManager:
+        """
+        Get the manager for connections.
+
+        Returns
+        -------
+        ConnectionManager
+            The manager instance for handling connections.
+        """
         return ConnectionManager(self)
 
     @property
     def sharing_profiles(self) -> SharingProfileManager:
+        """
+        Get the manager for sharing profiles.
+
+        Returns
+        -------
+        SharingProfileManager
+            The manager instance for handling sharing profiles.
+        """
         return SharingProfileManager(self)
 
     @property
     def user_groups(self) -> UserGroupManager:
+        """
+        Get the manager for user groups.
+
+        Returns
+        -------
+        UserGroupManager
+            The manager instance for handling user groups.
+        """
         return UserGroupManager(self)
 
     @property
     def users(self) -> UserManager:
+        """
+        Get the manager for users.
+
+        Returns
+        -------
+        UserManager
+            The manager instance for handling users.
+        """
         return UserManager(self)
