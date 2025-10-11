@@ -65,7 +65,7 @@ class Guacamole:
         default_datasource: Optional[str] = None,
         use_cookies: bool = False,
         ssl_verify: bool = False,
-        logging_level: str = "INFO",
+        logging_level: Optional[str] = None,
     ):
         """
         Initialize the Guacamole client for interacting with the Guacamole REST API.
@@ -92,19 +92,20 @@ class Guacamole:
             Whether to use cookies for authentication. Defaults to False.
         ssl_verify : bool, optional
             Whether to verify SSL certificates. Defaults to False.
-        logging_level : str, optional
-            The logging level (e.g., "DEBUG", "INFO"). Defaults to "INFO".
+        logging_level : Optional[str], optional
+            The logging level (e.g., "DEBUG", "INFO"). Defaults to None (no logging configuration).
 
         Raises
         ------
         GuacamoleError
             If authentication fails or the specified data source is invalid.
         """
-        configure_logging(logging_level)
+        if logging_level is not None:
+            configure_logging(logging_level)
 
         if connection_protocol not in {"http", "https"}:
             raise GuacamoleError(f"Invalid connection protocol: {connection_protocol}. Must be 'http' or 'https'.")
-        self.method = connection_protocol
+        self.protocol = connection_protocol
 
         self.base_url = f"{connection_protocol}://{hostname}:{connection_port}{base_url_path}api"
         self.username = username
@@ -115,12 +116,12 @@ class Guacamole:
         if not self.verify:
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-        resp = self._authenticate()
-        auth = resp.json()
-        if not all(key in auth for key in ("authToken", "dataSource", "availableDataSources")):
+        response = self._authenticate()
+        auth_response = response.json()
+        if not all(key in auth_response for key in ("authToken", "dataSource", "availableDataSources")):
             raise GuacamoleError("Authentication failed: Missing required fields in response")
 
-        self.data_sources = auth["availableDataSources"]
+        self.data_sources = auth_response["availableDataSources"]
         if default_datasource:
             if default_datasource not in self.data_sources:
                 raise GuacamoleError(
@@ -128,10 +129,10 @@ class Guacamole:
                 )
             self.primary_datasource = default_datasource
         else:
-            self.primary_datasource = auth["dataSource"]
+            self.primary_datasource = auth_response["dataSource"]
 
-        self.cookies = resp.cookies if use_cookies else None
-        self.token = auth["authToken"]
+        self.cookies = response.cookies if use_cookies else None
+        self.token = auth_response["authToken"]
 
     def _authenticate(self) -> requests.Response:
         """
@@ -163,7 +164,7 @@ class Guacamole:
         response.raise_for_status()
         return response
 
-    def _get_token(
+    def get_json_token(
         self,
         payload: Dict[str, Any],
     ) -> str:
@@ -183,7 +184,7 @@ class Guacamole:
         Examples
         --------
         >>> payload = {"data": {"username": "john_doe", "password": "secret"}}
-        >>> token = client._get_token(payload)
+        >>> token = client.get_json_token(payload)
         """
         json_token = requester(
             client=self,
@@ -192,6 +193,22 @@ class Guacamole:
             payload={"data": payload},
         )
         return json_token["authToken"]
+
+    def logout(self) -> None:
+        """
+        Revoke the current authentication token, ending the session.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the logout request fails.
+        """
+        requester(
+            client=self,
+            method="DELETE",
+            url=f"{self.base_url}/tokens/{self.token}",
+            json_response=False,
+        )
 
     @property
     def active_connections(self) -> ActiveConnectionManager:

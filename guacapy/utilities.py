@@ -31,27 +31,34 @@ from typing import Union, Dict, List, Any, Optional
 logger = logging.getLogger(__name__)
 
 def configure_logging(
-    level: str = "INFO",
+    level: Optional[str] = None,
     logger_name: str = "",
-    log_file: str = "app.log",
+    log_file: Optional[str] = "app.log",
 ) -> None:
     """
     Configure logging for the application.
 
     Parameters
     ----------
-    level : str, optional
-        The logging level (e.g., "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"). Defaults to "INFO".
+    level : Optional[str], optional
+        The logging level (e.g., "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"). Defaults to None (no configuration).
     logger_name : str, optional
         The name of the logger to configure. Defaults to the root logger.
-    log_file : str, optional
-        The file to write logs to. Defaults to "app.log".
+    log_file : Optional[str], optional
+        The file to write logs to. Defaults to "app.log". If None, only console logging is configured.
 
     Raises
     ------
     ValueError
         If the provided logging level is invalid.
+
+    Examples
+    --------
+    >>> configure_logging(level="DEBUG", log_file="guacapy.log")
     """
+    if level is None:
+        return
+
     level_map = {
         "DEBUG": logging.DEBUG,
         "INFO": logging.INFO,
@@ -69,13 +76,15 @@ def configure_logging(
     formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(formatter)
-    file_handler = logging.FileHandler(log_file)
-    file_handler.setFormatter(formatter)
-    my_logger.handlers = [stream_handler, file_handler]
+    my_logger.handlers = [stream_handler]
+    if log_file:
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setFormatter(formatter)
+        my_logger.handlers.append(file_handler)
     my_logger.log(level_map[level], f"Logging configured for '{logger_name or 'root'}' at level {level}")
 
 def requester(
-    client: Any,
+    guac_client: Any,
     url: str,
     method: str = "GET",
     params: Optional[Dict[str, Any]] = None,
@@ -91,7 +100,7 @@ def requester(
 
     Parameters
     ----------
-    client : Any
+    guac_client : Any
         The Guacamole client instance providing authentication details.
     url : str
         The URL for the API request.
@@ -102,13 +111,13 @@ def requester(
     payload : Union[Dict[str, Any], List[Any], None], optional
         The JSON payload for the request body. Defaults to None.
     token : Optional[str], optional
-        The authentication token. Defaults to client.token if None.
+        The authentication token. Defaults to guac_client.token if None.
     verify : Optional[bool], optional
-        Whether to verify SSL certificates. Defaults to client.verify if None.
+        Whether to verify SSL certificates. Defaults to guac_client.verify if None.
     allow_redirects : bool, optional
         Whether to allow HTTP redirects. Defaults to True.
     cookies : Optional[Dict[str, Any]], optional
-        Cookies to include in the request. Defaults to client.cookies if None.
+        Cookies to include in the request. Defaults to guac_client.cookies if None.
     json_response : bool, optional
         Whether to parse the response as JSON. Defaults to True.
 
@@ -125,14 +134,14 @@ def requester(
         If json_response is True and the response cannot be parsed as JSON.
     """
     params = params or {}
-    token = token or client.token
-    verify = verify if verify is not None else client.verify
-    cookies = cookies or client.cookies
+    token = token or guac_client.token
+    verify = verify if verify is not None else guac_client.verify
+    cookies = cookies or guac_client.cookies
 
     params["token"] = token
 
     logger.debug(f"{method} {url} - Params: {params} - Payload: {payload}")
-    r = requests.request(
+    response = requests.request(
         method=method,
         url=url,
         params=params,
@@ -141,16 +150,16 @@ def requester(
         allow_redirects=allow_redirects,
         cookies=cookies,
     )
-    if not r.ok:
-        logger.error(f"Request failed with status {r.status_code}: {r.content}")
-    r.raise_for_status()
+    if not response.ok:
+        logger.error(f"Request failed with status {response.status_code}: {response.content}")
+    response.raise_for_status()
     if json_response:
         try:
-            return r.json()
+            return response.json()
         except JSONDecodeError:
             logger.error("Could not decode JSON response")
             raise
-    return r
+    return response
 
 def get_hotp_token(
     secret: str,
@@ -199,9 +208,63 @@ def get_totp_token(secret: str) -> str:
     value = get_hotp_token(secret, intervals_no=int(time.time()) // 30)
     return str(value).rjust(6, "0")
 
-def _get_connection_by_name(
-    client: Any,
-    cons: Dict[str, Any],
+def _find_by_name(
+    guac_client: Any,
+    data: Dict[str, Any],
+    name: str,
+    key: str,
+    child_key: str,
+    regex: bool = False,
+) -> Optional[Dict[str, Any]]:
+    """
+    Recursively search for an item by name in a nested dictionary.
+
+    Parameters
+    ----------
+    guac_client : Any
+        The Guacamole client instance.
+    data : Dict[str, Any]
+        The dictionary to search (e.g., connection or group data).
+    name : str
+        The name of the item to find.
+    key : str
+        The key for direct items (e.g., "childConnections" or "childConnectionGroups").
+    child_key : str
+        The key for nested groups (e.g., "childConnectionGroups").
+    regex : bool, optional
+        Whether to use regex matching for the name. Defaults to False.
+
+    Returns
+    -------
+    Optional[Dict[str, Any]]
+        The item dictionary if found, else None.
+    """
+    if key not in data:
+        if child_key in data:
+            for child in data[child_key]:
+                result = _find_by_name(guac_client, child, name, key, child_key, regex)
+                if result:
+                    return result
+    else:
+        children = data[key]
+        if regex:
+            result = [x for x in children if re.search(name, x["name"])]
+        else:
+            result = [x for x in children if x["name"] == name]
+        if result:
+            return result[0]
+        if child_key in data:
+            for child in data[child_key]:
+                result = _find_by_name(guac_client, child, name, key, child_key, regex)
+                if result:
+                    return result
+    if (regex and re.search(name, data["name"])) or (not regex and data["name"] == name):
+        return data
+    return None
+
+def _find_connection_by_name(
+    guac_client: Any,
+    connection_data: Dict[str, Any],
     name: str,
     regex: bool = False,
 ) -> Optional[Dict[str, Any]]:
@@ -210,9 +273,9 @@ def _get_connection_by_name(
 
     Parameters
     ----------
-    client : Any
+    guac_client : Any
         The Guacamole client instance.
-    cons : Dict[str, Any]
+    connection_data : Dict[str, Any]
         The connection group dictionary to search.
     name : str
         The name of the connection to find.
@@ -224,59 +287,11 @@ def _get_connection_by_name(
     Optional[Dict[str, Any]]
         The connection dictionary if found, else None.
     """
-    if "childConnections" not in cons:
-        if "childConnectionGroups" in cons:
-            for c in cons["childConnectionGroups"]:
-                res = _get_connection_by_name(client, c, name, regex)
-                if res:
-                    return res
-    else:
-        children = cons["childConnections"]
-        if regex:
-            res = [x for x in children if re.search(name, x["name"])]
-        else:
-            res = [x for x in children if x["name"] == name]
-        if not res:
-            if "childConnectionGroups" in cons:
-                for c in cons["childConnectionGroups"]:
-                    res = _get_connection_by_name(client, c, name, regex)
-                    if res:
-                        return res
-        else:
-            return res[0]
-    return None
+    return _find_by_name(guac_client, connection_data, name, "childConnections", "childConnectionGroups", regex)
 
-def get_history(
-    client: Any,
-    datasource: Optional[str] = None,
-) -> Dict[str, Any]:
-    """
-    Retrieve connection history (not implemented).
-
-    Parameters
-    ----------
-    client : Any
-        The Guacamole client instance.
-    datasource : Optional[str], optional
-        The data source identifier. Defaults to client.primary_datasource if None.
-
-    Returns
-    -------
-    Dict[str, Any]
-        The connection history (placeholder).
-
-    Raises
-    ------
-    NotImplementedError
-        Always raised, as this function is not yet implemented.
-    """
-    if not datasource:
-        datasource = client.primary_datasource
-    raise NotImplementedError("get_history is not yet implemented")
-
-def _get_connection_group_by_name(
-    client: Any,
-    cons: Dict[str, Any],
+def _find_connection_group_by_name(
+    guac_client: Any,
+    group_data: Dict[str, Any],
     name: str,
     regex: bool = False,
 ) -> Optional[Dict[str, Any]]:
@@ -285,9 +300,9 @@ def _get_connection_group_by_name(
 
     Parameters
     ----------
-    client : Any
+    guac_client : Any
         The Guacamole client instance.
-    cons : Dict[str, Any]
+    group_data : Dict[str, Any]
         The connection group dictionary to search.
     name : str
         The name of the connection group to find.
@@ -299,24 +314,10 @@ def _get_connection_group_by_name(
     Optional[Dict[str, Any]]
         The connection group dictionary if found, else None.
     """
-    if (regex and re.search(name, cons["name"])) or (not regex and cons["name"] == name):
-        return cons
-    if "childConnectionGroups" in cons:
-        children = cons["childConnectionGroups"]
-        if regex:
-            res = [x for x in children if re.search(name, x["name"])]
-        else:
-            res = [x for x in children if x["name"] == name]
-        if res:
-            return res[0]
-        for c in cons["childConnectionGroups"]:
-            res = _get_connection_group_by_name(client, c, name, regex)
-            if res:
-                return res
-    return None
+    return _find_by_name(guac_client, group_data, name, "childConnectionGroups", "childConnectionGroups", regex)
 
 def get_connection_group_by_name(
-    client: Any,
+    guac_client: Any,
     name: str,
     regex: bool = False,
     datasource: Optional[str] = None,
@@ -326,14 +327,14 @@ def get_connection_group_by_name(
 
     Parameters
     ----------
-    client : Any
+    guac_client : Any
         The Guacamole client instance.
     name : str
         The name of the connection group to find.
     regex : bool, optional
         Whether to use regex matching for the name. Defaults to False.
     datasource : Optional[str], optional
-        The data source identifier. Defaults to client.primary_datasource if None.
+        The data source identifier. Defaults to guac_client.primary_datasource if None.
 
     Returns
     -------
@@ -346,6 +347,6 @@ def get_connection_group_by_name(
     >>> group = client.get_connection_group_by_name("Root Group")
     """
     if not datasource:
-        datasource = client.primary_datasource
-    cons = client.get_connections(datasource)
-    return _get_connection_group_by_name(client, cons, name, regex)
+        datasource = guac_client.primary_datasource
+    cons = guac_client.get_connections(datasource)
+    return _find_connection_group_by_name(guac_client, cons, name, regex)

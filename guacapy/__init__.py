@@ -3,7 +3,8 @@ Guacamole API client package.
 
 This module provides the `Guacamole` class as the primary interface for interacting with the
 Guacamole REST API, enabling management of users, connections, connection groups, and other
-resources. The package version follows a date-based format (major.YYYYMMDD.patch).
+resources through manager classes (e.g., `UserManager`, `ConnectionManager`). The package
+version follows a date-based format (major.YYYYMMDD.patch).
 
 Examples
 --------
@@ -14,7 +15,7 @@ Examples
 ...     password="secret",
 ...     datasource="mysql"
 ... )
->>> users = client.users.list()
+>>> users = client.users.list()  # Access UserManager via client.users
 """
 
 from .client import Guacamole
