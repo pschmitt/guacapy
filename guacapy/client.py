@@ -138,6 +138,9 @@ class Guacamole:
         """
         Authenticate with the Guacamole API to obtain an authentication token.
 
+        Sends a POST request to /api/tokens with x-www-form-urlencoded data containing
+        username, password, and optionally guac-totp for two-factor authentication.
+
         Returns
         -------
         requests.Response
@@ -146,7 +149,9 @@ class Guacamole:
         Raises
         ------
         requests.HTTPError
-            If the authentication request fails.
+            If the authentication request fails (e.g., 401 Unauthorized for invalid credentials).
+        GuacamoleError
+            If the response is missing required fields.
         """
         parameters = {
             "username": self.username,
@@ -155,13 +160,18 @@ class Guacamole:
         if self.secret is not None:
             parameters["guac-totp"] = get_totp_token(self.secret)
 
-        response = requests.post(
-            url=f"{self.base_url}/tokens",
-            data=parameters,
-            verify=self.verify,
-            allow_redirects=True,
-        )
-        response.raise_for_status()
+        try:
+            response = requests.post(
+                url=f"{self.base_url}/tokens",
+                data=parameters,
+                verify=self.verify,
+                allow_redirects=True,
+            )
+            response.raise_for_status()
+        except requests.HTTPError as e:
+            if response.status_code == 401:
+                raise GuacamoleError("Authentication failed: Invalid username or password") from e
+            raise
         return response
 
     def get_json_token(
@@ -170,6 +180,9 @@ class Guacamole:
     ) -> str:
         """
         Submit a signed/encrypted payload for the guacamole-auth-json extension to obtain a token.
+
+        This method supports the guacamole-auth-json extension, which is not part of the standard
+        Guacamole API but allows JSON-based authentication.
 
         Parameters
         ----------
@@ -187,7 +200,7 @@ class Guacamole:
         >>> token = client.get_json_token(payload)
         """
         json_token = requester(
-            client=self,
+            guac_client=self,
             method="POST",
             url=f"{self.base_url}/tokens",
             payload={"data": payload},
@@ -198,17 +211,25 @@ class Guacamole:
         """
         Revoke the current authentication token, ending the session.
 
+        Sends a DELETE request to /api/tokens/{token}, expecting a 204 No Content response.
+
+        Returns
+        -------
+        None
+            No return value (204 No Content).
+
         Raises
         ------
         requests.HTTPError
             If the logout request fails.
         """
         requester(
-            client=self,
+            guac_client=self,
             method="DELETE",
             url=f"{self.base_url}/tokens/{self.token}",
             json_response=False,
         )
+        self.token = None  # Clear token to prevent reuse
 
     @property
     def active_connections(self) -> ActiveConnectionManager:
