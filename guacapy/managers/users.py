@@ -10,7 +10,7 @@ https://github.com/ridvanaltun/guacamole-rest-api-documentation
 
 Parameters
 ----------
-guac_client : Guacamole
+client : Guacamole
     The Guacamole client instance with authentication details.
 datasource : str, optional
     The data source identifier (e.g., 'mysql', 'postgresql'). Defaults to the client's primary data source.
@@ -75,7 +75,7 @@ class UserManager(BaseManager):
 
     def __init__(
         self,
-        guac_client: Any,
+        client: Any,
         datasource: Optional[str] = None,
     ):
         """
@@ -83,7 +83,7 @@ class UserManager(BaseManager):
 
         Parameters
         ----------
-        guac_client : Any
+        client : Any
             The Guacamole client instance with base_url and authentication details.
         datasource : Optional[str], optional
             The data source identifier (e.g., 'mysql', 'postgresql'). Defaults to
@@ -95,15 +95,13 @@ class UserManager(BaseManager):
             The provided Guacamole client instance.
         datasource : str
             The data source identifier for API requests.
-        url : str
-            The base URL for user-related endpoints.
 
         Raises
         ------
         requests.HTTPError
             If the API authentication fails or the datasource is invalid.
         """
-        super().__init__(guac_client, datasource)
+        super().__init__(client, datasource)
         self.url = (
             f"{self.client.base_url}/session/data/{self.datasource}/users"
         )

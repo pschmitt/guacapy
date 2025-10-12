@@ -71,8 +71,6 @@ class SharingProfileManager(BaseManager):
             The provided Guacamole client instance.
         datasource : str
             The data source identifier for API requests.
-        url : str
-            The base URL for sharing profile endpoints.
 
         Raises
         ------

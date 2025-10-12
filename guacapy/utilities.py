@@ -258,7 +258,7 @@ def get_totp_token(secret: str) -> str:
 
     Examples
     --------
-    >>> secret = "JBSWY3DPEHPK3PXP"
+    >>> secret = "something_secretive"
     >>> token = get_totp_token(secret)
     """
     value = get_hotp_token(secret, intervals_no=int(time.time()) // 30)

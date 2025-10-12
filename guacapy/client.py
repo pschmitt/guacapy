@@ -50,8 +50,6 @@ class GuacamoleError(Exception):
 
     Parameters
     ----------
-    message : str
-        The error message describing the issue.
     """
 
     pass
@@ -211,7 +209,7 @@ class Guacamole:
         Examples
         --------
         >>> payload = {"data": {"username": "john_doe", "password": "secret"}}
-        >>> token = client.get_json_token(payload)
+        >>> token = guac_client.get_json_token(payload)
         """
         json_token = requester(
             guac_client=self,

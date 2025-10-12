@@ -12,13 +12,13 @@ https://github.com/ridvanaltun/guacamole-rest-api-documentation
 Examples
 --------
 >>> from guacapy import Guacamole
->>> client = Guacamole(
+>>> guac_client = Guacamole(
 ...     hostname="guacamole.example.com",
 ...     username="admin",
 ...     password="secret",
 ...     datasource="mysql"
 ... )
->>> users = client.users.list()  # Access UserManager via client.users
+>>> users = guac_client.users.list()  # Access UserManager via client.users
 """
 
 from .client import Guacamole
