@@ -37,7 +37,7 @@ from .managers import (
     UserGroupManager,
     UserManager,
     SchemaManager,
-    # PermissionsManager,
+    PermissionsManager,
 )
 
 # Get the logger for this module
@@ -329,14 +329,14 @@ class Guacamole:
         """
         return SchemaManager(self)
 
-    # @property
-    # def permissions(self) -> PermissionsManager:
-    #     """
-    #     Get the manager for permissions.
-    #
-    #     Returns
-    #     -------
-    #     PermissionsManager
-    #         The manager instance for handling permissions.
-    #     """
-    #     return PermissionsManager(self)
+    @property
+    def permissions(self) -> PermissionsManager:
+        """
+        Get the manager for permissions.
+
+        Returns
+        -------
+        PermissionsManager
+            The manager instance for handling permissions.
+        """
+        return PermissionsManager(self)

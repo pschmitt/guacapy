@@ -3,6 +3,9 @@
 This document tracks the actual behavior of the Apache Guacamole REST API based on testing with `guacapy`, supplementing the unofficial documentation at:
 https://github.com/ridvanaltun/guacamole-rest-api-documentation
 
+## Notes
+- The `/api/session/ext/guacamole/languages` endpoint returned 404 in Guacamole 1.6.0, likely due to a missing extension (e.g., `guacamole-auth-jdbc-mysql`) or version incompatibility. It is excluded from this wrapper as it appears related to UI language settings.
+
 ## Users
 
 ### GET /api/session/data/{data_source}/users
@@ -332,3 +335,15 @@ https://github.com/ridvanaltun/guacamole-rest-api-documentation
   - 200: Success.
   - 401: Unauthorized.
   - 403: Insufficient permissions.
+
+## Permissions
+### PATCH /api/session/data/{data_source}/users/{username}/permissions
+- **Description**: Assigns or revokes system permissions for a user.
+- **Payload**: `[{"op": "add", "path": "/systemPermissions", "value": "{permission}"}]`.
+- **Response**: 204 No Content.
+- **Status Codes**:
+  - 204: Success.
+  - 404: User not found.
+  - 400: Invalid permission or payload.
+  - 401: Unauthorized.
+- **Notes**: Valid permissions include `CREATE_USER`, `CREATE_USER_GROUP`, `CREATE_CONNECTION`, `CREATE_CONNECTION_GROUP`, `CREATE_SHARING_PROFILE`, `ADMINISTER`. The `value` field must be a string, not a list.
