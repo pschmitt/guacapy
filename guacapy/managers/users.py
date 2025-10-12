@@ -39,6 +39,7 @@ Retrieve user details:
 import logging
 import requests
 from typing import Dict, Any, Optional
+from copy import deepcopy
 from .base import BaseManager
 from ..utilities import requester, validate_payload
 
@@ -46,9 +47,8 @@ from ..utilities import requester, validate_payload
 logger = logging.getLogger(__name__)
 
 class UserManager(BaseManager):
-    USER_TEMPLATE: Dict[str, Any] = {
+    UPDATE_USER_TEMPLATE: Dict[str, Any] = {
         "username": "",
-        "password": "",
         "attributes": {
             "disabled": "",
             "expired": "",
@@ -63,6 +63,9 @@ class UserManager(BaseManager):
             "guac-email-address": "",
         },
     }
+
+    CREATE_USER_TEMPLATE: Dict[str, Any] = deepcopy(UPDATE_USER_TEMPLATE)
+    CREATE_USER_TEMPLATE["password"] = ""
 
     def __init__(
         self,
@@ -566,7 +569,7 @@ class UserManager(BaseManager):
         Parameters
         ----------
         payload : Dict[str, Any]
-            The user creation payload. Must conform to USER_TEMPLATE.
+            The user creation payload, requiring 'username', 'password', and optional 'attributes' dictionary.
 
         Returns
         -------
@@ -576,22 +579,20 @@ class UserManager(BaseManager):
         Raises
         ------
         ValueError
-            If the payload is invalid.
+            If the payload is invalid (e.g., missing required fields like 'username' or 'password').
         requests.HTTPError
             If the API request fails (e.g., 400 for invalid payload, 401 for unauthorized).
 
         Examples
         --------
-        >>> from copy import deepcopy
-        >>> payload = deepcopy(UserManager.USER_TEMPLATE)
-        >>> payload.update({
+        >>> payload = {
         ...     "username": "testuser",
         ...     "password": "pass",
         ...     "attributes": {"guac-email-address": "test@example.com"}
-        ... })
+        ... }
         >>> user = user_manager.create(payload)
         """
-        validate_payload(payload, self.USER_TEMPLATE)
+        validate_payload(payload, self.CREATE_USER_TEMPLATE, allow_partial=True)
         result = requester(
             guac_client=self.client,
             url=self.url,
@@ -611,7 +612,8 @@ class UserManager(BaseManager):
         username : str
             The username of the user to update.
         payload : Dict[str, Any]
-            The update payload. Must conform to USER_TEMPLATE.
+            The update payload, requiring 'username' and optional 'attributes' dictionary.
+            The 'attributes' field can include a subset of keys for partial updates.
 
         Returns
         -------
@@ -621,21 +623,19 @@ class UserManager(BaseManager):
         Raises
         ------
         ValueError
-            If the payload is invalid.
+            If the payload is invalid (e.g., missing required field 'username').
         requests.HTTPError
             If the API request fails (e.g., 404 for non-existent user, 400 for invalid payload).
 
         Examples
         --------
-        >>> from copy import deepcopy
-        >>> payload = deepcopy(UserManager.USER_TEMPLATE)
-        >>> payload.update({
+        >>> payload = {
         ...     "username": "daxm",
         ...     "attributes": {"guac-email-address": "new@asdf.com"}
-        ... })
+        ... }
         >>> response = user_manager.update("daxm", payload)
         """
-        validate_payload(payload, self.USER_TEMPLATE)
+        validate_payload(payload, self.UPDATE_USER_TEMPLATE, allow_partial=True)
         result = requester(
             guac_client=self.client,
             url=f"{self.url}/{username}",

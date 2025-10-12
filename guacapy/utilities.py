@@ -173,7 +173,7 @@ def requester(
             raise
     return response
 
-def validate_payload(payload: Dict[str, Any], template: Dict[str, Any]) -> None:
+def validate_payload(payload: Dict[str, Any], template: Dict[str, Any], allow_partial: bool = False) -> None:
     """
     Validate a payload against a template, ensuring required fields are present.
 
@@ -183,18 +183,23 @@ def validate_payload(payload: Dict[str, Any], template: Dict[str, Any]) -> None:
         The payload to validate.
     template : Dict[str, Any]
         The template dictionary with expected structure.
+    allow_partial : bool, optional
+        If True, allows missing top-level fields and nested dictionary keys (e.g., 'attributes').
+        Defaults to False.
 
     Raises
     ------
     ValueError
-        If required fields are missing or types are incorrect.
+        If required fields are missing or types are incorrect when allow_partial=False.
     """
     for key, value in template.items():
-        if key not in payload:
+        if key not in payload and not allow_partial:
             raise ValueError(f"Missing required field: {key}")
-        if isinstance(value, dict) and isinstance(payload.get(key), dict):
-            validate_payload(payload[key], value)
-        elif value is not None and payload[key] is None:
+        if isinstance(value, dict) and key in payload and isinstance(payload[key], dict):
+            # Allow partial nested dictionaries (e.g., 'attributes') even when allow_partial=False
+            # to support optional fields like 'disabled' in user creation
+            validate_payload(payload[key], value, allow_partial=True)
+        elif value is not None and payload.get(key) is None and not allow_partial:
             raise ValueError(f"Field {key} cannot be None")
 
 def get_hotp_token(
