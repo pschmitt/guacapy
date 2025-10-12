@@ -36,6 +36,8 @@ from .managers import (
     SharingProfileManager,
     UserGroupManager,
     UserManager,
+    SchemaManager,
+    # PermissionsManager,
 )
 
 # Get the logger for this module
@@ -314,3 +316,27 @@ class Guacamole:
             The manager instance for handling users.
         """
         return UserManager(self)
+
+    @property
+    def schema(self) -> SchemaManager:
+        """
+        Get the manager for schema.
+
+        Returns
+        -------
+        SchemaManager
+            The manager instance for handling schema.
+        """
+        return SchemaManager(self)
+
+    # @property
+    # def permissions(self) -> PermissionsManager:
+    #     """
+    #     Get the manager for permissions.
+    #
+    #     Returns
+    #     -------
+    #     PermissionsManager
+    #         The manager instance for handling permissions.
+    #     """
+    #     return PermissionsManager(self)

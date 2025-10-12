@@ -4,6 +4,8 @@ from .connections import ConnectionManager
 from .sharing_profiles import SharingProfileManager
 from .user_groups import UserGroupManager
 from .users import UserManager
+from .schema import SchemaManager
+# from .permissions import PermissionsManager
 
 __all__ = [
     "ActiveConnectionManager",
@@ -12,4 +14,6 @@ __all__ = [
     "SharingProfileManager",
     "UserGroupManager",
     "UserManager",
+    "SchemaManager",
+    # "PermissionsManager",
 ]
