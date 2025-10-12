@@ -19,7 +19,12 @@ Examples
 --------
 Create a client and list connection groups:
 >>> from guacapy import Guacamole
->>> client = Guacamole(hostname="192.168.11.53", username="guacadmin", password="abAB12!@", connection_protocol="https", ssl_verify=False, connection_port=8443)
+>>> client = Guacamole(
+...     hostname="guacamole.example.com",
+...     username="admin",
+...     password="secret",
+...     datasource="mysql"
+... )
 >>> group_manager = client.connection_groups
 >>> groups = group_manager.list()
 >>> print(groups)
@@ -34,6 +39,7 @@ from ..utilities import requester, validate_payload
 
 # Get the logger for this module
 logger = logging.getLogger(__name__)
+
 
 class ConnectionGroupManager(BaseManager):
     ORG_TEMPLATE: Dict[str, Any] = {
@@ -105,7 +111,10 @@ class ConnectionGroupManager(BaseManager):
         )
         return result
 
-    def details(self, identifier: str) -> Dict[str, Any]:
+    def details(
+        self,
+        identifier: str,
+    ) -> Dict[str, Any]:
         """
         Retrieve details for a specific connection group.
 
@@ -136,7 +145,11 @@ class ConnectionGroupManager(BaseManager):
         )
         return result
 
-    def get_by_name(self, name: str, regex: bool = False) -> Optional[Dict[str, Any]]:
+    def get_by_name(
+        self,
+        name: str,
+        regex: bool = False,
+    ) -> Optional[Dict[str, Any]]:
         """
         Retrieve a connection group by its name.
 
@@ -159,10 +172,19 @@ class ConnectionGroupManager(BaseManager):
         {'identifier': 'ROOT', 'name': 'Root Group', 'type': 'ORGANIZATIONAL', ...}
         """
         from ..utilities import _find_connection_group_by_name
-        cons = self.list()
-        return _find_connection_group_by_name(self.client, cons, name, regex)
 
-    def create(self, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        cons = self.list()
+        return _find_connection_group_by_name(
+            self.client,
+            cons,
+            name,
+            regex,
+        )
+
+    def create(
+        self,
+        payload: Dict[str, Any],
+    ) -> Optional[Dict[str, Any]]:
         """
         Create a new connection group.
 
@@ -208,7 +230,9 @@ class ConnectionGroupManager(BaseManager):
             raise
 
     def update(
-        self, identifier: str, payload: Dict[str, Any]
+        self,
+        identifier: str,
+        payload: Dict[str, Any],
     ) -> requests.Response:
         """
         Update an existing connection group.
@@ -249,7 +273,10 @@ class ConnectionGroupManager(BaseManager):
         )
         return result
 
-    def delete(self, identifier: str) -> requests.Response:
+    def delete(
+        self,
+        identifier: str,
+    ) -> requests.Response:
         """
         Delete a connection group.
 

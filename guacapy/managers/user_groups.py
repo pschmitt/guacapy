@@ -19,7 +19,12 @@ Examples
 --------
 Create a client and list user groups:
 >>> from guacapy import Guacamole
->>> client = Guacamole(hostname="192.168.11.53", username="guacadmin", password="abAB12!@", connection_protocol="https", ssl_verify=False, connection_port=8443)
+>>> client = Guacamole(
+...     hostname="guacamole.example.com",
+...     username="admin",
+...     password="secret",
+...     datasource="mysql"
+... )
 >>> group_manager = client.user_groups
 >>> groups = group_manager.list()
 >>> print(groups)
@@ -34,6 +39,7 @@ from ..utilities import requester, validate_payload
 
 # Get the logger for this module
 logger = logging.getLogger(__name__)
+
 
 class UserGroupManager(BaseManager):
     GROUP_TEMPLATE: Dict[str, Any] = {
@@ -102,7 +108,10 @@ class UserGroupManager(BaseManager):
         )
         return result
 
-    def details(self, identifier: str) -> Dict[str, Any]:
+    def details(
+        self,
+        identifier: str,
+    ) -> Dict[str, Any]:
         """
         Retrieve details for a specific user group.
 
@@ -133,7 +142,10 @@ class UserGroupManager(BaseManager):
         )
         return result
 
-    def members(self, identifier: str) -> Dict[str, Any]:
+    def members(
+        self,
+        identifier: str,
+    ) -> Dict[str, Any]:
         """
         Retrieve member users of a specific user group.
 
@@ -164,7 +176,11 @@ class UserGroupManager(BaseManager):
         )
         return result
 
-    def edit_members(self, identifier: str, payload: List[Dict[str, Any]]) -> requests.Response:
+    def edit_members(
+        self,
+        identifier: str,
+        payload: List[Dict[str, Any]],
+    ) -> requests.Response:
         """
         Add or remove members from a user group.
 
@@ -202,7 +218,10 @@ class UserGroupManager(BaseManager):
         )
         return result
 
-    def create(self, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def create(
+        self,
+        payload: Dict[str, Any],
+    ) -> Optional[Dict[str, Any]]:
         """
         Create a new user group.
 
@@ -248,7 +267,9 @@ class UserGroupManager(BaseManager):
             raise
 
     def update(
-        self, identifier: str, payload: Dict[str, Any]
+        self,
+        identifier: str,
+        payload: Dict[str, Any],
     ) -> requests.Response:
         """
         Update an existing user group.
@@ -289,7 +310,10 @@ class UserGroupManager(BaseManager):
         )
         return result
 
-    def delete(self, identifier: str) -> Optional[requests.Response]:
+    def delete(
+        self,
+        identifier: str,
+    ) -> Optional[requests.Response]:
         """
         Delete a user group.
 

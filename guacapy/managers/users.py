@@ -24,7 +24,12 @@ Examples
 --------
 Create a client and list users:
 >>> from guacapy import Guacamole
->>> client = Guacamole(hostname="192.168.11.53", username="guacadmin", password="abAB12!@", connection_protocol="https", ssl_verify=False, connection_port=8443)
+>>> client = Guacamole(
+...     hostname="guacamole.example.com",
+...     username="admin",
+...     password="secret",
+...     datasource="mysql"
+... )
 >>> user_manager = client.users
 >>> users = user_manager.list()
 >>> print(users)
@@ -45,6 +50,7 @@ from ..utilities import requester, validate_payload
 
 # Get the logger for this module
 logger = logging.getLogger(__name__)
+
 
 class UserManager(BaseManager):
     UPDATE_USER_TEMPLATE: Dict[str, Any] = {
@@ -128,7 +134,10 @@ class UserManager(BaseManager):
         )
         return result
 
-    def user_details(self, username: str) -> Dict[str, Any]:
+    def user_details(
+        self,
+        username: str,
+    ) -> Dict[str, Any]:
         """
         Retrieve details for a specific user.
 
@@ -159,7 +168,10 @@ class UserManager(BaseManager):
         )
         return result
 
-    def user_permissions(self, username: str) -> Dict[str, Any]:
+    def user_permissions(
+        self,
+        username: str,
+    ) -> Dict[str, Any]:
         """
         Retrieve a user's explicit permissions.
 
@@ -190,7 +202,10 @@ class UserManager(BaseManager):
         )
         return result
 
-    def user_effective_permissions(self, username: str) -> Dict[str, Any]:
+    def user_effective_permissions(
+        self,
+        username: str,
+    ) -> Dict[str, Any]:
         """
         Retrieve a user's effective permissions (inherited and explicit).
 
@@ -221,7 +236,10 @@ class UserManager(BaseManager):
         )
         return result
 
-    def user_usergroups(self, username: str) -> Dict[str, Any]:
+    def user_usergroups(
+        self,
+        username: str,
+    ) -> Dict[str, Any]:
         """
         List the user groups a user belongs to.
 
@@ -252,7 +270,10 @@ class UserManager(BaseManager):
         )
         return result
 
-    def user_history(self, username: str) -> Dict[str, Any]:
+    def user_history(
+        self,
+        username: str,
+    ) -> Dict[str, Any]:
         """
         Retrieve connection history for a user.
 
@@ -284,7 +305,9 @@ class UserManager(BaseManager):
         return result
 
     def assign_usergroups(
-        self, username: str, usergroup: str
+        self,
+        username: str,
+        usergroup: str,
     ) -> requests.Response:
         """
         Add a user to a user group.
@@ -329,7 +352,9 @@ class UserManager(BaseManager):
         return result
 
     def revoke_usergroups(
-        self, username: str, usergroup: str
+        self,
+        username: str,
+        usergroup: str,
     ) -> requests.Response:
         """
         Remove a user from a user group.
@@ -562,7 +587,10 @@ class UserManager(BaseManager):
         )
         return result
 
-    def create(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def create(
+        self,
+        payload: Dict[str, Any],
+    ) -> Dict[str, Any]:
         """
         Create a new user.
 
@@ -602,7 +630,9 @@ class UserManager(BaseManager):
         return result
 
     def update(
-        self, username: str, payload: Dict[str, Any]
+        self,
+        username: str,
+        payload: Dict[str, Any],
     ) -> requests.Response:
         """
         Update an existing user.
@@ -645,7 +675,10 @@ class UserManager(BaseManager):
         )
         return result
 
-    def delete(self, username: str) -> requests.Response:
+    def delete(
+        self,
+        username: str,
+    ) -> requests.Response:
         """
         Delete a user.
 

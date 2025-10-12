@@ -19,7 +19,12 @@ Examples
 --------
 Create a client and list connections:
 >>> from guacapy import Guacamole
->>> client = Guacamole(hostname="192.168.11.53", username="guacadmin", password="abAB12!@", connection_protocol="https", ssl_verify=False, connection_port=8443)
+>>> client = Guacamole(
+...     hostname="guacamole.example.com",
+...     username="admin",
+...     password="secret",
+...     datasource="mysql"
+... )
 >>> conn_manager = client.connections
 >>> connections = conn_manager.list()
 >>> print(connections)
@@ -34,6 +39,7 @@ from ..utilities import requester, validate_payload
 
 # Get the logger for this module
 logger = logging.getLogger(__name__)
+
 
 class ConnectionManager(BaseManager):
     # Templates for common connection types
@@ -189,7 +195,10 @@ class ConnectionManager(BaseManager):
         )
         return result
 
-    def details(self, identifier: str) -> Dict[str, Any]:
+    def details(
+        self,
+        identifier: str,
+    ) -> Dict[str, Any]:
         """
         Retrieve details for a specific connection.
 
@@ -220,7 +229,10 @@ class ConnectionManager(BaseManager):
         )
         return result
 
-    def parameters(self, identifier: str) -> Dict[str, Any]:
+    def parameters(
+        self,
+        identifier: str,
+    ) -> Dict[str, Any]:
         """
         Retrieve parameters for a specific connection.
 
@@ -251,7 +263,11 @@ class ConnectionManager(BaseManager):
         )
         return result
 
-    def get_by_name(self, name: str, regex: bool = False) -> Optional[Dict[str, Any]]:
+    def get_by_name(
+        self,
+        name: str,
+        regex: bool = False,
+    ) -> Optional[Dict[str, Any]]:
         """
         Retrieve a connection by its name.
 
@@ -274,10 +290,19 @@ class ConnectionManager(BaseManager):
         {'identifier': '1', 'name': 'testconnection', 'protocol': 'ssh', ...}
         """
         from ..utilities import _find_connection_by_name
-        cons = self.list()
-        return _find_connection_by_name(self.client, cons, name, regex)
 
-    def create(self, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        cons = self.list()
+        return _find_connection_by_name(
+            self.client,
+            cons,
+            name,
+            regex,
+        )
+
+    def create(
+        self,
+        payload: Dict[str, Any],
+    ) -> Optional[Dict[str, Any]]:
         """
         Create a new connection.
 
@@ -334,7 +359,9 @@ class ConnectionManager(BaseManager):
             raise
 
     def update(
-        self, identifier: str, payload: Dict[str, Any]
+        self,
+        identifier: str,
+        payload: Dict[str, Any],
     ) -> requests.Response:
         """
         Update an existing connection.
@@ -387,7 +414,10 @@ class ConnectionManager(BaseManager):
         )
         return result
 
-    def delete(self, identifier: str) -> requests.Response:
+    def delete(
+        self,
+        identifier: str,
+    ) -> requests.Response:
         """
         Delete a connection.
 

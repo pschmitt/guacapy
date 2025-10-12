@@ -19,7 +19,12 @@ Examples
 --------
 Create a client and assign a system permission:
 >>> from guacapy import Guacamole
->>> client = Guacamole(hostname="192.168.11.53", username="guacadmin", password="abAB12!@", connection_protocol="https", ssl_verify=False, connection_port=8443)
+>>> client = Guacamole(
+...     hostname="guacamole.example.com",
+...     username="admin",
+...     password="secret",
+...     datasource="mysql"
+... )
 >>> permissions_manager = client.permissions
 >>> response = permissions_manager.assign_system_permission(username="daxm", permission="CREATE_USER")
 >>> print(response.status_code)
@@ -28,12 +33,13 @@ Create a client and assign a system permission:
 
 import logging
 import requests
-from typing import Dict, Any, Optional
+from typing import Any, Optional
 from .base import BaseManager
 from ..utilities import requester
 
 # Get the logger for this module
 logger = logging.getLogger(__name__)
+
 
 class PermissionsManager(BaseManager):
     def __init__(
@@ -72,7 +78,9 @@ class PermissionsManager(BaseManager):
         )
 
     def assign_system_permission(
-        self, username: str, permission: str
+        self,
+        username: str,
+        permission: str,
     ) -> requests.Response:
         """
         Assign a system permission to a user.
@@ -101,7 +109,11 @@ class PermissionsManager(BaseManager):
         204
         """
         payload = [
-            {"op": "add", "path": "/systemPermissions", "value": permission}
+            {
+                "op": "add",
+                "path": "/systemPermissions",
+                "value": permission,
+            }
         ]
         result = requester(
             guac_client=self.client,
@@ -113,7 +125,9 @@ class PermissionsManager(BaseManager):
         return result
 
     def revoke_system_permission(
-        self, username: str, permission: str
+        self,
+        username: str,
+        permission: str,
     ) -> requests.Response:
         """
         Revoke a system permission from a user.
@@ -142,7 +156,11 @@ class PermissionsManager(BaseManager):
         204
         """
         payload = [
-            {"op": "remove", "path": "/systemPermissions", "value": permission}
+            {
+                "op": "remove",
+                "path": "/systemPermissions",
+                "value": permission,
+            }
         ]
         result = requester(
             guac_client=self.client,

@@ -19,7 +19,12 @@ Examples
 --------
 Create a client and list sharing profiles:
 >>> from guacapy import Guacamole
->>> client = Guacamole(hostname="192.168.11.53", username="guacadmin", password="abAB12!@", connection_protocol="https", ssl_verify=False, connection_port=8443)
+>>> client = Guacamole(
+...     hostname="guacamole.example.com",
+...     username="admin",
+...     password="secret",
+...     datasource="mysql"
+... )
 >>> profile_manager = client.sharing_profiles
 >>> profiles = profile_manager.list()
 >>> print(profiles)
@@ -34,6 +39,7 @@ from ..utilities import requester, validate_payload
 
 # Get the logger for this module
 logger = logging.getLogger(__name__)
+
 
 class SharingProfileManager(BaseManager):
     PROFILE_TEMPLATE: Dict[str, Any] = {
@@ -102,7 +108,10 @@ class SharingProfileManager(BaseManager):
         )
         return result
 
-    def details(self, identifier: str) -> Dict[str, Any]:
+    def details(
+        self,
+        identifier: str,
+    ) -> Dict[str, Any]:
         """
         Retrieve details for a specific sharing profile.
 
@@ -133,7 +142,10 @@ class SharingProfileManager(BaseManager):
         )
         return result
 
-    def parameters(self, identifier: str) -> Dict[str, Any]:
+    def parameters(
+        self,
+        identifier: str,
+    ) -> Dict[str, Any]:
         """
         Retrieve parameters for a specific sharing profile.
 
@@ -164,7 +176,10 @@ class SharingProfileManager(BaseManager):
         )
         return result
 
-    def create(self, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def create(
+        self,
+        payload: Dict[str, Any],
+    ) -> Optional[Dict[str, Any]]:
         """
         Create a new sharing profile.
 
@@ -213,7 +228,9 @@ class SharingProfileManager(BaseManager):
             raise
 
     def update(
-        self, identifier: str, payload: Dict[str, Any]
+        self,
+        identifier: str,
+        payload: Dict[str, Any],
     ) -> requests.Response:
         """
         Update an existing sharing profile.
@@ -258,7 +275,10 @@ class SharingProfileManager(BaseManager):
         )
         return result
 
-    def delete(self, identifier: str) -> requests.Response:
+    def delete(
+        self,
+        identifier: str,
+    ) -> requests.Response:
         """
         Delete a sharing profile.
 

@@ -7,6 +7,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class BaseManager:
     """
     Base class for Guacamole API managers, handling common initialization logic.
@@ -19,7 +20,11 @@ class BaseManager:
         The data source identifier (e.g., 'mysql', 'postgresql').
     """
 
-    def __init__(self, client: Any, datasource: Optional[str] = None):
+    def __init__(
+        self,
+        client: Any,
+        datasource: Optional[str] = None,
+    ):
         """
         Initialize the manager with a Guacamole client and data source.
 

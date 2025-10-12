@@ -19,7 +19,12 @@ Examples
 --------
 Create a client and list supported protocols:
 >>> from guacapy import Guacamole
->>> client = Guacamole(hostname="192.168.11.53", username="guacadmin", password="abAB12!@", connection_protocol="https", ssl_verify=False, connection_port=8443)
+>>> client = Guacamole(
+...     hostname="guacamole.example.com",
+...     username="admin",
+...     password="secret",
+...     datasource="mysql"
+... )
 >>> schema_manager = client.schema
 >>> protocols = schema_manager.protocols()
 >>> print(protocols)
@@ -27,13 +32,13 @@ Create a client and list supported protocols:
 """
 
 import logging
-import requests
 from typing import Dict, Any, Optional
 from .base import BaseManager
 from ..utilities import requester
 
 # Get the logger for this module
 logger = logging.getLogger(__name__)
+
 
 class SchemaManager(BaseManager):
     def __init__(
@@ -58,8 +63,6 @@ class SchemaManager(BaseManager):
             The provided Guacamole client instance.
         datasource : str
             The data source identifier for API requests.
-        url : str
-            The base URL for schema endpoints.
 
         Raises
         ------

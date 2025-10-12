@@ -19,7 +19,12 @@ Examples
 --------
 Create a client and list active connections:
 >>> from guacapy import Guacamole
->>> client = Guacamole(hostname="192.168.11.53", username="guacadmin", password="abAB12!@", connection_protocol="https", ssl_verify=False, connection_port=8443)
+>>> client = Guacamole(
+...     hostname="guacamole.example.com",
+...     username="admin",
+...     password="secret",
+...     datasource="mysql"
+... )
 >>> active_conns = client.active_connections
 >>> connections = active_conns.list()
 >>> print(connections)
@@ -34,6 +39,7 @@ from ..utilities import requester
 
 # Get the logger for this module
 logger = logging.getLogger(__name__)
+
 
 class ActiveConnectionManager(BaseManager):
     def __init__(
@@ -98,7 +104,10 @@ class ActiveConnectionManager(BaseManager):
         )
         return result
 
-    def details(self, identifier: str) -> Optional[Dict[str, Any]]:
+    def details(
+        self,
+        identifier: str,
+    ) -> Optional[Dict[str, Any]]:
         """
         Retrieve details for a specific active connection.
 
@@ -141,7 +150,10 @@ class ActiveConnectionManager(BaseManager):
                 return None
             raise
 
-    def kill(self, identifier: str) -> Optional[requests.Response]:
+    def kill(
+        self,
+        identifier: str,
+    ) -> Optional[requests.Response]:
         """
         Terminate an active connection.
 

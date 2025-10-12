@@ -30,6 +30,7 @@ from typing import Union, Dict, List, Any, Optional
 # Get the logger for this module
 logger = logging.getLogger(__name__)
 
+
 def configure_logging(
     level: Optional[str] = None,
     logger_name: str = "",
@@ -89,6 +90,7 @@ def configure_logging(
         level_map[level],
         f"Logging configured for '{logger_name or 'root'}' at level {level}",
     )
+
 
 def requester(
     guac_client: Any,
@@ -173,7 +175,12 @@ def requester(
             raise
     return response
 
-def validate_payload(payload: Dict[str, Any], template: Dict[str, Any], allow_partial: bool = False) -> None:
+
+def validate_payload(
+    payload: Dict[str, Any],
+    template: Dict[str, Any],
+    allow_partial: bool = False,
+) -> None:
     """
     Validate a payload against a template, ensuring required fields are present.
 
@@ -195,12 +202,19 @@ def validate_payload(payload: Dict[str, Any], template: Dict[str, Any], allow_pa
     for key, value in template.items():
         if key not in payload and not allow_partial:
             raise ValueError(f"Missing required field: {key}")
-        if isinstance(value, dict) and key in payload and isinstance(payload[key], dict):
+        if (
+            isinstance(value, dict)
+            and key in payload
+            and isinstance(payload[key], dict)
+        ):
             # Allow partial nested dictionaries (e.g., 'attributes') even when allow_partial=False
             # to support optional fields like 'disabled' in user creation
             validate_payload(payload[key], value, allow_partial=True)
-        elif value is not None and payload.get(key) is None and not allow_partial:
+        elif (
+            value is not None and payload.get(key) is None and not allow_partial
+        ):
             raise ValueError(f"Field {key} cannot be None")
+
 
 def get_hotp_token(
     secret: str,
@@ -227,6 +241,7 @@ def get_hotp_token(
     o = h[19] & 15
     return (struct.unpack(">I", h[o : o + 4])[0] & 0x7FFFFFFF) % 1000000
 
+
 def get_totp_token(secret: str) -> str:
     """
     Generate a TOTP token for two-factor authentication.
@@ -248,6 +263,7 @@ def get_totp_token(secret: str) -> str:
     """
     value = get_hotp_token(secret, intervals_no=int(time.time()) // 30)
     return str(value).rjust(6, "0")
+
 
 def _find_by_name(
     guac_client: Any,
@@ -284,7 +300,12 @@ def _find_by_name(
         if child_key in data:
             for child in data[child_key]:
                 result = _find_by_name(
-                    guac_client, child, name, key, child_key, regex
+                    guac_client,
+                    child,
+                    name,
+                    key,
+                    child_key,
+                    regex,
                 )
                 if result:
                     return result
@@ -299,7 +320,12 @@ def _find_by_name(
         if child_key in data:
             for child in data[child_key]:
                 result = _find_by_name(
-                    guac_client, child, name, key, child_key, regex
+                    guac_client,
+                    child,
+                    name,
+                    key,
+                    child_key,
+                    regex,
                 )
                 if result:
                     return result
@@ -308,6 +334,7 @@ def _find_by_name(
     ):
         return data
     return None
+
 
 def _find_connection_by_name(
     guac_client: Any,
@@ -343,6 +370,7 @@ def _find_connection_by_name(
         regex,
     )
 
+
 def _find_connection_group_by_name(
     guac_client: Any,
     group_data: Dict[str, Any],
@@ -376,6 +404,7 @@ def _find_connection_group_by_name(
         "childConnectionGroups",
         regex,
     )
+
 
 def get_connection_group_by_name(
     guac_client: Any,
