@@ -47,12 +47,8 @@ https://github.com/ridvanaltun/guacamole-rest-api-documentation
 - **Status Codes**:
   - 204: Success.
   - 404: Group not found.
-  - 500: Internal server error (e.g., due to SQL syntax error in MySQL backend).
-- **Notes**:
-  - Fails with 500 in Guacamole 1.6.0 due to SQL syntax error in MySQL JDBC module: `DELETE FROM guacamole_entity WHERE type = 'USER_GROUP' name = ?` missing `AND` operator (GUACAMOLE-2088).
-  - Workaround: Manually delete via SQL: `DELETE FROM guacamole_entity WHERE type = 'USER_GROUP' AND name = 'group_name'`.
-  - Fixed in Guacamole 1.6.1, but Docker image not yet available (as of 2025-10-11).
-  - #TODO: Monitor for 1.6.1 Docker image or build custom image from source.
+  - 500: Internal server error.
+- **Notes**: Fails with 500 in Guacamole 1.6.0 due to SQL syntax error in MySQL JDBC module (GUACAMOLE-2088).
 
 ## Connections
 
@@ -98,6 +94,95 @@ https://github.com/ridvanaltun/guacamole-rest-api-documentation
   - 404: Connection not found.
   - 401: Unauthorized.
 
+## Connection Groups
+
+### GET /api/session/data/{data_source}/connectionGroups
+- **Description**: Retrieves all connection groups in the data source.
+- **Response**: Dictionary mapping group identifiers to details (e.g., `{'1': {'identifier': '1', 'name': 'bh01 (Main Hospital)', 'type': 'ORGANIZATIONAL', ...}}`).
+- **Status Codes**:
+  - 200: Success.
+  - 401: Unauthorized.
+  - 403: Insufficient permissions.
+- **Notes**: The `ROOT` group may not appear in the response, unlike documentation expectations.
+
+### GET /api/session/data/{data_source}/connectionGroups/{identifier}
+- **Description**: Retrieves details for a specific connection group.
+- **Response**: Dictionary with `identifier`, `name`, `type`, etc. (e.g., `{'identifier': '1', 'name': 'bh01 (Main Hospital)', 'type': 'ORGANIZATIONAL', ...}`).
+- **Status Codes**:
+  - 200: Success.
+  - 404: Group not found.
+  - 401: Unauthorized.
+
+### POST /api/session/data/{data_source}/connectionGroups
+- **Description**: Creates a new connection group.
+- **Payload**: `{"name": "group_name", "parentIdentifier": "ROOT", "type": "ORGANIZATIONAL", "attributes": {}}`.
+- **Response**: Created group details (e.g., `{'identifier': '2', 'name': 'testgroup', ...}`).
+- **Status Codes**:
+  - 200: Success.
+  - 400: Group already exists or invalid payload.
+  - 401: Unauthorized.
+
+### PUT /api/session/data/{data_source}/connectionGroups/{identifier}
+- **Description**: Updates an existing connection group.
+- **Payload**: `{"identifier": "2", "name": "testgroup_updated", "parentIdentifier": "ROOT", "type": "ORGANIZATIONAL", "attributes": {}}`.
+- **Response**: 204 No Content.
+- **Status Codes**:
+  - 204: Success.
+  - 404: Group not found.
+  - 400: Invalid payload.
+
+### DELETE /api/session/data/{data_source}/connectionGroups/{identifier}
+- **Description**: Deletes a connection group.
+- **Response**: 204 No Content.
+- **Status Codes**:
+  - 204: Success.
+  - 404: Group not found.
+  - 401: Unauthorized.
+
+## Sharing Profiles
+
+### GET /api/session/data/{data_source}/sharingProfiles
+- **Description**: Retrieves all sharing profiles in the data source.
+- **Response**: Dictionary mapping profile identifiers to details (e.g., `{'1': {'identifier': '1', 'name': 'share', 'primaryConnectionIdentifier': '1', ...}}`).
+- **Status Codes**:
+  - 200: Success.
+  - 401: Unauthorized.
+  - 403: Insufficient permissions.
+
+### GET /api/session/data/{data_source}/sharingProfiles/{identifier}
+- **Description**: Retrieves details for a specific sharing profile.
+- **Response**: Dictionary with `identifier`, `name`, `primaryConnectionIdentifier`, etc. (e.g., `{'identifier': '1', 'name': 'share', 'primaryConnectionIdentifier': '1', ...}`).
+- **Status Codes**:
+  - 200: Success.
+  - 404: Profile not found.
+  - 401: Unauthorized.
+
+### POST /api/session/data/{data_source}/sharingProfiles
+- **Description**: Creates a new sharing profile.
+- **Payload**: `{"name": "profile_name", "primaryConnectionIdentifier": "1", "parameters": {}, "attributes": {}}`.
+- **Response**: Created profile details (e.g., `{'identifier': '2', 'name': 'testprofile', ...}`).
+- **Status Codes**:
+  - 200: Success.
+  - 400: Profile already exists or invalid payload.
+  - 401: Unauthorized.
+
+### PUT /api/session/data/{data_source}/sharingProfiles/{identifier}
+- **Description**: Updates an existing sharing profile.
+- **Payload**: `{"identifier": "2", "name": "testprofile_updated", "primaryConnectionIdentifier": "1", "parameters": {}, "attributes": {}}`.
+- **Response**: 204 No Content.
+- **Status Codes**:
+  - 204: Success.
+  - 404: Profile not found.
+  - 400: Invalid payload.
+
+### DELETE /api/session/data/{data_source}/sharingProfiles/{identifier}
+- **Description**: Deletes a sharing profile.
+- **Response**: 204 No Content.
+- **Status Codes**:
+  - 204: Success.
+  - 404: Profile not found.
+  - 401: Unauthorized.
+
 ## Active Connections
 ### GET /api/session/data/{data_source}/activeConnections
 - **Description**: Retrieves all active connections in the data source.
@@ -125,4 +210,3 @@ https://github.com/ridvanaltun/guacamole-rest-api-documentation
 
 ## To Be Documented
 - [ ] Users
-- [ ] Connection Groups
