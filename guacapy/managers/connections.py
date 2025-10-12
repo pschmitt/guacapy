@@ -34,6 +34,7 @@ from ..utilities import requester
 # Get the logger for this module
 logger = logging.getLogger(__name__)
 
+
 class ConnectionManager:
     def __init__(
         self,
@@ -70,7 +71,9 @@ class ConnectionManager:
             self.datasource = datasource
         else:
             self.datasource = self.client.primary_datasource
-        self.url = f"{self.client.base_url}/session/data/{self.datasource}/connections"
+        self.url = (
+            f"{self.client.base_url}/session/data/{self.datasource}/connections"
+        )
 
     def list(self) -> Dict[str, Any]:
         """
@@ -174,11 +177,15 @@ class ConnectionManager:
             return result
         except requests.HTTPError as e:
             if e.response.status_code == 400:
-                logger.warning(f"Failed to create connection {payload.get('name')} (already exists, 400)")
+                logger.warning(
+                    f"Failed to create connection {payload.get('name')} (already exists, 400)"
+                )
                 return None
             raise
 
-    def update(self, identifier: str, payload: Dict[str, Any]) -> requests.Response:
+    def update(
+        self, identifier: str, payload: Dict[str, Any]
+    ) -> requests.Response:
         """
         Update an existing connection.
 

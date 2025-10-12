@@ -34,6 +34,7 @@ from ..utilities import requester
 # Get the logger for this module
 logger = logging.getLogger(__name__)
 
+
 class UserGroupManager:
     def __init__(
         self,
@@ -70,7 +71,9 @@ class UserGroupManager:
             self.datasource = datasource
         else:
             self.datasource = self.client.primary_datasource
-        self.url = f"{self.client.base_url}/session/data/{self.datasource}/userGroups"
+        self.url = (
+            f"{self.client.base_url}/session/data/{self.datasource}/userGroups"
+        )
 
     def list(self) -> Dict[str, Any]:
         """
@@ -171,11 +174,15 @@ class UserGroupManager:
             return result
         except requests.HTTPError as e:
             if e.response.status_code == 400:
-                logger.warning(f"Failed to create user group {payload.get('identifier')} (already exists, 400)")
+                logger.warning(
+                    f"Failed to create user group {payload.get('identifier')} (already exists, 400)"
+                )
                 return None
             raise
 
-    def update(self, identifier: str, payload: Dict[str, Any]) -> requests.Response:
+    def update(
+        self, identifier: str, payload: Dict[str, Any]
+    ) -> requests.Response:
         """
         Update an existing user group.
 
@@ -259,6 +266,8 @@ class UserGroupManager:
             return result
         except requests.HTTPError as e:
             if e.response.status_code == 500:
-                logger.warning(f"Failed to delete user group {identifier} due to server error (500)")
+                logger.warning(
+                    f"Failed to delete user group {identifier} due to server error (500)"
+                )
                 return None
             raise

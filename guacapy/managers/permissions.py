@@ -34,6 +34,7 @@ from ..utilities import requester
 # Get the logger for this module
 logger = logging.getLogger(__name__)
 
+
 class PermissionsManager:
     def __init__(
         self,
@@ -70,9 +71,13 @@ class PermissionsManager:
             self.datasource = datasource
         else:
             self.datasource = self.client.primary_datasource
-        self.url = f"{self.client.base_url}/session/data/{self.datasource}/users"
+        self.url = (
+            f"{self.client.base_url}/session/data/{self.datasource}/users"
+        )
 
-    def assign_system_permission(self, username: str, permission: str) -> requests.Response:
+    def assign_system_permission(
+        self, username: str, permission: str
+    ) -> requests.Response:
         """
         Assign a system permission to a user.
 
@@ -99,11 +104,9 @@ class PermissionsManager:
         >>> print(response.status_code)
         204
         """
-        payload = [{
-            "op": "add",
-            "path": "/systemPermissions",
-            "value": permission
-        }]
+        payload = [
+            {"op": "add", "path": "/systemPermissions", "value": permission}
+        ]
         result = requester(
             guac_client=self.client,
             url=f"{self.url}/{username}/permissions",
@@ -113,7 +116,9 @@ class PermissionsManager:
         )
         return result
 
-    def revoke_system_permission(self, username: str, permission: str) -> requests.Response:
+    def revoke_system_permission(
+        self, username: str, permission: str
+    ) -> requests.Response:
         """
         Revoke a system permission from a user.
 
@@ -140,11 +145,9 @@ class PermissionsManager:
         >>> print(response.status_code)
         204
         """
-        payload = [{
-            "op": "remove",
-            "path": "/systemPermissions",
-            "value": permission
-        }]
+        payload = [
+            {"op": "remove", "path": "/systemPermissions", "value": permission}
+        ]
         result = requester(
             guac_client=self.client,
             url=f"{self.url}/{username}/permissions",

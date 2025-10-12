@@ -34,6 +34,7 @@ from ..utilities import requester
 # Get the logger for this module
 logger = logging.getLogger(__name__)
 
+
 class ActiveConnectionManager:
     def __init__(
         self,
@@ -138,7 +139,9 @@ class ActiveConnectionManager:
             return result
         except requests.HTTPError as e:
             if e.response.status_code == 404:
-                logger.warning(f"Active connection {identifier} not found (404)")
+                logger.warning(
+                    f"Active connection {identifier} not found (404)"
+                )
                 return None
             raise
 
@@ -181,6 +184,8 @@ class ActiveConnectionManager:
             return result
         except requests.HTTPError as e:
             if e.response.status_code == 404:
-                logger.warning(f"Active connection {identifier} not found (404)")
+                logger.warning(
+                    f"Active connection {identifier} not found (404)"
+                )
                 return None
             raise

@@ -34,6 +34,7 @@ from ..utilities import requester
 # Get the logger for this module
 logger = logging.getLogger(__name__)
 
+
 class SchemaManager:
     def __init__(
         self,
@@ -70,7 +71,9 @@ class SchemaManager:
             self.datasource = datasource
         else:
             self.datasource = self.client.primary_datasource
-        self.url = f"{self.client.base_url}/session/data/{self.datasource}/schema"
+        self.url = (
+            f"{self.client.base_url}/session/data/{self.datasource}/schema"
+        )
 
     def protocols(self) -> Dict[str, Any]:
         """

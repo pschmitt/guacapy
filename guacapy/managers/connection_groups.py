@@ -34,6 +34,7 @@ from ..utilities import requester
 # Get the logger for this module
 logger = logging.getLogger(__name__)
 
+
 class ConnectionGroupManager:
     def __init__(
         self,
@@ -173,11 +174,15 @@ class ConnectionGroupManager:
             return result
         except requests.HTTPError as e:
             if e.response.status_code == 400:
-                logger.warning(f"Failed to create connection group {payload.get('name')} (already exists, 400)")
+                logger.warning(
+                    f"Failed to create connection group {payload.get('name')} (already exists, 400)"
+                )
                 return None
             raise
 
-    def update(self, identifier: str, payload: Dict[str, Any]) -> requests.Response:
+    def update(
+        self, identifier: str, payload: Dict[str, Any]
+    ) -> requests.Response:
         """
         Update an existing connection group.
 
