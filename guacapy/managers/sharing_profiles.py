@@ -1,19 +1,70 @@
+"""
+Sharing profile management module for the Guacamole REST API.
+
+This module provides the `SharingProfileManager` class to interact with sharing profile endpoints
+of the Apache Guacamole REST API, enabling operations such as listing sharing profiles, retrieving
+profile details, creating, updating, and deleting sharing profiles.
+
+The API endpoints are based on the unofficial documentation for Guacamole version 1.1.0:
+https://github.com/ridvanaltun/guacamole-rest-api-documentation
+
+Parameters
+----------
+client : Guacamole
+    The Guacamole client instance with authentication details.
+datasource : str, optional
+    The data source identifier (e.g., 'mysql', 'postgresql'). Defaults to the client's primary data source.
+
+Examples
+--------
+Create a client and list sharing profiles:
+>>> from guacapy import Guacamole
+>>> client = Guacamole(hostname="192.168.11.53", username="guacadmin", password="abAB12!@", connection_protocol="https", ssl_verify=False, connection_port=8443)
+>>> profile_manager = client.sharing_profiles
+>>> profiles = profile_manager.list()
+>>> print(profiles)
+{'1': {'identifier': '1', 'name': 'share', 'primaryConnectionIdentifier': '1', ...}}
+"""
+
 import logging
-
 import requests
-
-from utilities import requester
+from typing import Dict, Any, Optional
+from ..utilities import requester
 
 # Get the logger for this module
 logger = logging.getLogger(__name__)
 
-
 class SharingProfileManager:
     def __init__(
         self,
-        client,
-        datasource=None,
+        client: Any,
+        datasource: Optional[str] = None,
     ):
+        """
+        Initialize the SharingProfileManager for interacting with Guacamole sharing profile endpoints.
+
+        Parameters
+        ----------
+        client : Any
+            The Guacamole client instance with base_url and authentication details.
+        datasource : Optional[str], optional
+            The data source identifier (e.g., 'mysql', 'postgresql'). Defaults to
+            client.primary_datasource if None.
+
+        Attributes
+        ----------
+        client : Any
+            The provided Guacamole client instance.
+        datasource : str
+            The data source identifier for API requests.
+        url : str
+            The base URL for sharing profile endpoints.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the API authentication fails or the datasource is invalid.
+        """
         self.client = client
         if datasource:
             self.datasource = datasource
@@ -21,81 +72,183 @@ class SharingProfileManager:
             self.datasource = self.client.primary_datasource
         self.url = f"{self.client.base_url}/session/data/{self.datasource}/sharingProfiles"
 
+    def list(self) -> Dict[str, Any]:
+        """
+        Retrieve a list of all sharing profiles in the datasource.
 
-# def get_sharing_profile_parameters(
-#     self,
-#     sharing_profile_id,
-#     datasource=None,
-# ):
-#     if not datasource:
-#         datasource = self.primary_datasource
-#     return self._request(
-#         method="GET",
-#         url=f"{self.base_url}/session/data/{datasource}/sharingProfiles/{sharing_profile_id}/parameters",
-#     )
-#
-#
-# def get_sharing_profile_full(
-#     self,
-#     sharing_profile_id,
-#     datasource=None,
-# ):
-#     s = self.get_sharing_profile(
-#         sharing_profile_id,
-#         datasource,
-#     )
-#     s["parameters"] = self.get_sharing_profile_parameters(
-#         sharing_profile_id,
-#         datasource,
-#     )
-#     return s
-#
-#
-# def get_sharing_profile(
-#     self,
-#     sharing_profile_id,
-#     datasource=None,
-# ):
-#     if not datasource:
-#         datasource = self.primary_datasource
-#     return self._request(
-#         method="GET",
-#         url=f"{self.base_url}/session/data/{datasource}/sharingProfiles/{sharing_profile_id}",
-#     )
-#
-#
-# def add_sharing_profile(
-#     self,
-#     payload,
-#     datasource=None,
-# ):
-#     """
-#     Add/enable a sharing profile
-#
-#     Example payload:
-#     {"primaryConnectionIdentifier":"8",
-#     "name":"share",
-#     "parameters":{"read-only":""},
-#     "attributes":{}}'
-#     """
-#     if not datasource:
-#         datasource = self.primary_datasource
-#     return self._request(
-#         method="POST",
-#         url=f"{self.base_url}/session/data/{datasource}/sharingProfiles",
-#         payload=payload,
-#     )
-#
-#
-# def delete_sharing_profile(
-#     self,
-#     sharing_profile_id,
-#     datasource=None,
-# ):
-#     if not datasource:
-#         datasource = self.primary_datasource
-#     return self._request(
-#         method="DELETE",
-#         url=f"{self.base_url}/session/data/{datasource}/sharingProfiles/{sharing_profile_id}",
-#         json_response=False,
-#     )
+        Returns
+        -------
+        Dict[str, Any]
+            A dictionary mapping sharing profile identifiers to their details.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the API request fails (e.g., 401 for unauthorized, 403 for insufficient permissions).
+
+        Examples
+        --------
+        >>> profiles = profile_manager.list()
+        >>> print(profiles)
+        {'1': {'identifier': '1', 'name': 'share', 'primaryConnectionIdentifier': '1', ...}}
+        """
+        result = requester(
+            guac_client=self.client,
+            url=self.url,
+        )
+        return result
+
+    def details(self, identifier: str) -> Dict[str, Any]:
+        """
+        Retrieve details for a specific sharing profile.
+
+        Parameters
+        ----------
+        identifier : str
+            The identifier of the sharing profile to retrieve details for.
+
+        Returns
+        -------
+        Dict[str, Any]
+            The sharing profile details, including name and primary connection identifier.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the API request fails (e.g., 404 for non-existent profile, 401 for unauthorized).
+
+        Examples
+        --------
+        >>> profile = profile_manager.details("1")
+        >>> print(profile)
+        {'identifier': '1', 'name': 'share', 'primaryConnectionIdentifier': '1', ...}
+        """
+        result = requester(
+            guac_client=self.client,
+            url=f"{self.url}/{identifier}",
+        )
+        return result
+
+    def create(self, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Create a new sharing profile.
+
+        Parameters
+        ----------
+        payload : Dict[str, Any]
+            The sharing profile creation payload containing name and primary connection identifier.
+
+        Returns
+        -------
+        Optional[Dict[str, Any]]
+            The created sharing profile details, or None if the profile already exists (400 error).
+
+        Raises
+        ------
+        requests.HTTPError
+            If the API request fails for reasons other than 400 (e.g., 401 for unauthorized).
+
+        Examples
+        --------
+        >>> payload = {
+        ...     "name": "testprofile",
+        ...     "primaryConnectionIdentifier": "1",
+        ...     "parameters": {},
+        ...     "attributes": {}
+        ... }
+        >>> profile = profile_manager.create(payload)
+        >>> print(profile)
+        {'identifier': '2', 'name': 'testprofile', 'primaryConnectionIdentifier': '1', ...}
+        >>> # If profile already exists
+        >>> print(profile)
+        None
+        """
+        try:
+            result = requester(
+                guac_client=self.client,
+                url=self.url,
+                method="POST",
+                payload=payload,
+            )
+            return result
+        except requests.HTTPError as e:
+            if e.response.status_code == 400:
+                logger.warning(f"Failed to create sharing profile {payload.get('name')} (already exists, 400)")
+                return None
+            raise
+
+    def update(self, identifier: str, payload: Dict[str, Any]) -> requests.Response:
+        """
+        Update an existing sharing profile.
+
+        Parameters
+        ----------
+        identifier : str
+            The identifier of the sharing profile to update.
+        payload : Dict[str, Any]
+            The update payload containing sharing profile attributes.
+
+        Returns
+        -------
+        requests.Response
+            The HTTP response indicating success (204 No Content).
+
+        Raises
+        ------
+        requests.HTTPError
+            If the API request fails (e.g., 404 for non-existent profile, 400 for invalid payload).
+
+        Examples
+        --------
+        >>> payload = {
+        ...     "identifier": "2",
+        ...     "name": "testprofile_updated",
+        ...     "primaryConnectionIdentifier": "1",
+        ...     "parameters": {},
+        ...     "attributes": {}
+        ... }
+        >>> response = profile_manager.update("2", payload)
+        >>> print(response.status_code)
+        204
+        """
+        result = requester(
+            guac_client=self.client,
+            url=f"{self.url}/{identifier}",
+            method="PUT",
+            payload=payload,
+            json_response=False,
+        )
+        return result
+
+    def delete(self, identifier: str) -> requests.Response:
+        """
+        Delete a sharing profile.
+
+        Parameters
+        ----------
+        identifier : str
+            The identifier of the sharing profile to delete.
+
+        Returns
+        -------
+        requests.Response
+            The HTTP response indicating success (204 No Content).
+
+        Raises
+        ------
+        requests.HTTPError
+            If the API request fails (e.g., 404 for non-existent profile, 401 for unauthorized).
+
+        Examples
+        --------
+        >>> response = profile_manager.delete("2")
+        >>> print(response.status_code)
+        204
+        """
+        result = requester(
+            guac_client=self.client,
+            url=f"{self.url}/{identifier}",
+            method="DELETE",
+            json_response=False,
+        )
+        return result
