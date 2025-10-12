@@ -39,13 +39,31 @@ Retrieve user details:
 import logging
 import requests
 from typing import Dict, Any, Optional
-from ..utilities import requester
+from .base import BaseManager
+from ..utilities import requester, validate_payload
 
 # Get the logger for this module
 logger = logging.getLogger(__name__)
 
+class UserManager(BaseManager):
+    USER_TEMPLATE: Dict[str, Any] = {
+        "username": "",
+        "password": "",
+        "attributes": {
+            "disabled": "",
+            "expired": "",
+            "access-window-start": "",
+            "access-window-end": "",
+            "valid-from": "",
+            "valid-until": "",
+            "timezone": None,
+            "guac-full-name": "",
+            "guac-organization": "",
+            "guac-organizational-role": "",
+            "guac-email-address": "",
+        },
+    }
 
-class UserManager:
     def __init__(
         self,
         guac_client: Any,
@@ -64,7 +82,7 @@ class UserManager:
 
         Attributes
         ----------
-        guac_client : Any
+        client : Any
             The provided Guacamole client instance.
         datasource : str
             The data source identifier for API requests.
@@ -76,13 +94,9 @@ class UserManager:
         requests.HTTPError
             If the API authentication fails or the datasource is invalid.
         """
-        self.guac_client = guac_client
-        if datasource:
-            self.datasource = datasource
-        else:
-            self.datasource = self.guac_client.primary_datasource
+        super().__init__(guac_client, datasource)
         self.url = (
-            f"{self.guac_client.base_url}/session/data/{self.datasource}/users"
+            f"{self.client.base_url}/session/data/{self.datasource}/users"
         )
 
     def list(self) -> Dict[str, Any]:
@@ -106,7 +120,7 @@ class UserManager:
         {'guacadmin': {'username': 'guacadmin', 'disabled': False, 'attributes': {...}, 'lastActive': 1760229440000}, ...}
         """
         result = requester(
-            guac_client=self.guac_client,
+            guac_client=self.client,
             url=self.url,
         )
         return result
@@ -137,7 +151,7 @@ class UserManager:
         {'username': 'daxm', 'disabled': False, 'attributes': {'guac-full-name': 'Dax Mickelson', 'guac-email-address': 'asdf@asdf.com', ...}, 'lastActive': 1760023106000}
         """
         result = requester(
-            guac_client=self.guac_client,
+            guac_client=self.client,
             url=f"{self.url}/{username}",
         )
         return result
@@ -168,7 +182,7 @@ class UserManager:
         {'connectionPermissions': {'1': ['READ']}, 'connectionGroupPermissions': {}, 'sharingProfilePermissions': {}, 'activeConnectionPermissions': {}, 'userPermissions': {'daxm': ['READ']}, 'userGroupPermissions': {}, 'systemPermissions': []}
         """
         result = requester(
-            guac_client=self.guac_client,
+            guac_client=self.client,
             url=f"{self.url}/{username}/permissions",
         )
         return result
@@ -199,7 +213,7 @@ class UserManager:
         {'connectionPermissions': {'1': ['READ']}, 'connectionGroupPermissions': {}, 'sharingProfilePermissions': {}, 'activeConnectionPermissions': {}, 'userPermissions': {'daxm': ['READ']}, 'userGroupPermissions': {}, 'systemPermissions': []}
         """
         result = requester(
-            guac_client=self.guac_client,
+            guac_client=self.client,
             url=f"{self.url}/{username}/effectivePermissions",
         )
         return result
@@ -230,7 +244,7 @@ class UserManager:
         ['netadmins']
         """
         result = requester(
-            guac_client=self.guac_client,
+            guac_client=self.client,
             url=f"{self.url}/{username}/userGroups",
         )
         return result
@@ -261,7 +275,7 @@ class UserManager:
         [{'identifier': '75', 'startDate': 1760023106000, 'uuid': '93b78545-...', 'remoteHost': '172.19.0.5', ...}, ...]
         """
         result = requester(
-            guac_client=self.guac_client,
+            guac_client=self.client,
             url=f"{self.url}/{username}/history",
         )
         return result
@@ -303,7 +317,7 @@ class UserManager:
             }
         ]
         result = requester(
-            guac_client=self.guac_client,
+            guac_client=self.client,
             url=f"{self.url}/{username}/userGroups",
             method="PATCH",
             payload=payload,
@@ -348,7 +362,7 @@ class UserManager:
             }
         ]
         result = requester(
-            guac_client=self.guac_client,
+            guac_client=self.client,
             url=f"{self.url}/{username}/userGroups",
             method="PATCH",
             payload=payload,
@@ -377,8 +391,8 @@ class UserManager:
         {'username': 'guacadmin', 'disabled': False, 'attributes': {...}, 'lastActive': 1760229440000}
         """
         result = requester(
-            guac_client=self.guac_client,
-            url=f"{self.guac_client.base_url}/session/data/{self.datasource}/self",
+            guac_client=self.client,
+            url=f"{self.client.base_url}/session/data/{self.datasource}/self",
         )
         return result
 
@@ -432,7 +446,7 @@ class UserManager:
             }
         ]
         result = requester(
-            guac_client=self.guac_client,
+            guac_client=self.client,
             url=f"{self.url}/{username}/permissions",
             method="PATCH",
             payload=payload,
@@ -490,7 +504,7 @@ class UserManager:
             }
         ]
         result = requester(
-            guac_client=self.guac_client,
+            guac_client=self.client,
             url=f"{self.url}/{username}/permissions",
             method="PATCH",
             payload=payload,
@@ -537,7 +551,7 @@ class UserManager:
             "newPassword": new_password,
         }
         result = requester(
-            guac_client=self.guac_client,
+            guac_client=self.client,
             url=f"{self.url}/{username}/password",
             method="PUT",
             payload=payload,
@@ -552,7 +566,7 @@ class UserManager:
         Parameters
         ----------
         payload : Dict[str, Any]
-            The user creation payload containing username, password, and attributes.
+            The user creation payload. Must conform to USER_TEMPLATE.
 
         Returns
         -------
@@ -561,33 +575,25 @@ class UserManager:
 
         Raises
         ------
+        ValueError
+            If the payload is invalid.
         requests.HTTPError
             If the API request fails (e.g., 400 for invalid payload, 401 for unauthorized).
 
         Examples
         --------
-        >>> payload = {
-        ...     "username": "test",
+        >>> from copy import deepcopy
+        >>> payload = deepcopy(UserManager.USER_TEMPLATE)
+        >>> payload.update({
+        ...     "username": "testuser",
         ...     "password": "pass",
-        ...     "attributes": {
-        ...         "disabled": "",
-        ...         "expired": "",
-        ...         "access-window-start": "",
-        ...         "access-window-end": "",
-        ...         "valid-from": "",
-        ...         "valid-until": "",
-        ...         "timezone": null,
-        ...         "guac-full-name": "",
-        ...         "guac-organization": "",
-        ...         "guac-organizational-role": ""
-        ...     }
-        ... }
+        ...     "attributes": {"guac-email-address": "test@example.com"}
+        ... })
         >>> user = user_manager.create(payload)
-        >>> print(user)
-        {'username': 'test', 'disabled': False, 'attributes': {...}}
         """
+        validate_payload(payload, self.USER_TEMPLATE)
         result = requester(
-            guac_client=self.guac_client,
+            guac_client=self.client,
             url=self.url,
             method="POST",
             payload=payload,
@@ -605,7 +611,7 @@ class UserManager:
         username : str
             The username of the user to update.
         payload : Dict[str, Any]
-            The update payload containing user attributes.
+            The update payload. Must conform to USER_TEMPLATE.
 
         Returns
         -------
@@ -614,33 +620,24 @@ class UserManager:
 
         Raises
         ------
+        ValueError
+            If the payload is invalid.
         requests.HTTPError
             If the API request fails (e.g., 404 for non-existent user, 400 for invalid payload).
 
         Examples
         --------
-        >>> payload = {
+        >>> from copy import deepcopy
+        >>> payload = deepcopy(UserManager.USER_TEMPLATE)
+        >>> payload.update({
         ...     "username": "daxm",
-        ...     "attributes": {
-        ...         "guac-email-address": "new@asdf.com",
-        ...         "guac-organizational-role": null,
-        ...         "guac-full-name": "Dax Mickelson",
-        ...         "expired": "",
-        ...         "timezone": null,
-        ...         "access-window-start": "",
-        ...         "guac-organization": null,
-        ...         "access-window-end": "",
-        ...         "disabled": "",
-        ...         "valid-until": "",
-        ...         "valid-from": ""
-        ...     }
-        ... }
+        ...     "attributes": {"guac-email-address": "new@asdf.com"}
+        ... })
         >>> response = user_manager.update("daxm", payload)
-        >>> print(response.status_code)
-        204
         """
+        validate_payload(payload, self.USER_TEMPLATE)
         result = requester(
-            guac_client=self.guac_client,
+            guac_client=self.client,
             url=f"{self.url}/{username}",
             method="PUT",
             payload=payload,
@@ -674,7 +671,7 @@ class UserManager:
         204
         """
         result = requester(
-            guac_client=self.guac_client,
+            guac_client=self.client,
             url=f"{self.url}/{username}",
             method="DELETE",
             json_response=False,

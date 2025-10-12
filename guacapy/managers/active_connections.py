@@ -29,13 +29,13 @@ Create a client and list active connections:
 import logging
 import requests
 from typing import Dict, Any, Optional
+from .base import BaseManager
 from ..utilities import requester
 
 # Get the logger for this module
 logger = logging.getLogger(__name__)
 
-
-class ActiveConnectionManager:
+class ActiveConnectionManager(BaseManager):
     def __init__(
         self,
         client: Any,
@@ -66,11 +66,7 @@ class ActiveConnectionManager:
         requests.HTTPError
             If the API authentication fails or the datasource is invalid.
         """
-        self.client = client
-        if datasource:
-            self.datasource = datasource
-        else:
-            self.datasource = self.client.primary_datasource
+        super().__init__(client, datasource)
         self.url = f"{self.client.base_url}/session/data/{self.datasource}/activeConnections"
 
     def list(self) -> Dict[str, Any]:
@@ -89,7 +85,7 @@ class ActiveConnectionManager:
 
         Examples
         --------
-        >>> connections = active_connection_manager.list()
+        >>> connections = active_conns.list()
         >>> print(connections)
         {}  # Empty if no active connections
         >>> # Example with active connection
@@ -124,7 +120,7 @@ class ActiveConnectionManager:
 
         Examples
         --------
-        >>> connection = active_connection_manager.details("1")
+        >>> connection = active_conns.details("1")
         >>> print(connection)
         {'identifier': '1', 'startDate': 1760023106000, 'remoteHost': '172.19.0.5', 'username': 'daxm', ...}
         >>> # If connection is not active
@@ -167,7 +163,7 @@ class ActiveConnectionManager:
 
         Examples
         --------
-        >>> response = active_connection_manager.kill("1")
+        >>> response = active_conns.kill("1")
         >>> print(response.status_code)
         204
         >>> # If connection is not active

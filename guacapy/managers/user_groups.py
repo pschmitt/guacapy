@@ -28,14 +28,19 @@ Create a client and list user groups:
 
 import logging
 import requests
-from typing import Dict, Any, Optional
-from ..utilities import requester
+from typing import Dict, Any, Optional, List
+from .base import BaseManager
+from ..utilities import requester, validate_payload
 
 # Get the logger for this module
 logger = logging.getLogger(__name__)
 
+class UserGroupManager(BaseManager):
+    GROUP_TEMPLATE: Dict[str, Any] = {
+        "identifier": "",
+        "attributes": {"disabled": ""},
+    }
 
-class UserGroupManager:
     def __init__(
         self,
         client: Any,
@@ -66,11 +71,7 @@ class UserGroupManager:
         requests.HTTPError
             If the API authentication fails or the datasource is invalid.
         """
-        self.client = client
-        if datasource:
-            self.datasource = datasource
-        else:
-            self.datasource = self.client.primary_datasource
+        super().__init__(client, datasource)
         self.url = (
             f"{self.client.base_url}/session/data/{self.datasource}/userGroups"
         )
@@ -132,6 +133,75 @@ class UserGroupManager:
         )
         return result
 
+    def members(self, identifier: str) -> Dict[str, Any]:
+        """
+        Retrieve member users of a specific user group.
+
+        Parameters
+        ----------
+        identifier : str
+            The identifier of the user group to retrieve members for.
+
+        Returns
+        -------
+        Dict[str, Any]
+            A dictionary mapping usernames to user details for group members.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the API request fails (e.g., 404 for non-existent group, 401 for unauthorized).
+
+        Examples
+        --------
+        >>> members = group_manager.members("netadmins")
+        >>> print(members)
+        {'daxm': {'username': 'daxm', 'attributes': {...}, ...}, ...}
+        """
+        result = requester(
+            guac_client=self.client,
+            url=f"{self.url}/{identifier}/memberUsers",
+        )
+        return result
+
+    def edit_members(self, identifier: str, payload: List[Dict[str, Any]]) -> requests.Response:
+        """
+        Add or remove members from a user group.
+
+        Parameters
+        ----------
+        identifier : str
+            The identifier of the user group to modify.
+        payload : List[Dict[str, Any]]
+            The patch payload to add or remove members.
+            Example: [{"op": "add", "path": "/", "value": "username"}]
+
+        Returns
+        -------
+        requests.Response
+            The HTTP response indicating success (204 No Content).
+
+        Raises
+        ------
+        requests.HTTPError
+            If the API request fails (e.g., 404 for non-existent group, 401 for unauthorized).
+
+        Examples
+        --------
+        >>> payload = [{"op": "add", "path": "/", "value": "daxm"}]
+        >>> response = group_manager.edit_members("netadmins", payload)
+        >>> print(response.status_code)
+        204
+        """
+        result = requester(
+            guac_client=self.client,
+            url=f"{self.url}/{identifier}/memberUsers",
+            method="PATCH",
+            payload=payload,
+            json_response=False,
+        )
+        return result
+
     def create(self, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
         Create a new user group.
@@ -139,7 +209,7 @@ class UserGroupManager:
         Parameters
         ----------
         payload : Dict[str, Any]
-            The user group creation payload containing identifier and attributes.
+            The user group creation payload. Must conform to GROUP_TEMPLATE.
 
         Returns
         -------
@@ -148,22 +218,19 @@ class UserGroupManager:
 
         Raises
         ------
+        ValueError
+            If the payload is invalid.
         requests.HTTPError
-            If the API request fails for reasons other than 400 (e.g., 401 for unauthorized).
+            If the API request fails for reasons other than 400.
 
         Examples
         --------
-        >>> payload = {
-        ...     "identifier": "testgroup",
-        ...     "attributes": {"disabled": False}
-        ... }
+        >>> from copy import deepcopy
+        >>> payload = deepcopy(UserGroupManager.GROUP_TEMPLATE)
+        >>> payload.update({"identifier": "testgroup"})
         >>> group = group_manager.create(payload)
-        >>> print(group)
-        {'identifier': 'testgroup', 'attributes': {'disabled': False}, ...}
-        >>> # If group already exists
-        >>> print(group)
-        None
         """
+        validate_payload(payload, self.GROUP_TEMPLATE)
         try:
             result = requester(
                 guac_client=self.client,
@@ -191,7 +258,7 @@ class UserGroupManager:
         identifier : str
             The identifier of the user group to update.
         payload : Dict[str, Any]
-            The update payload containing user group attributes.
+            The update payload. Must conform to GROUP_TEMPLATE.
 
         Returns
         -------
@@ -200,19 +267,19 @@ class UserGroupManager:
 
         Raises
         ------
+        ValueError
+            If the payload is invalid.
         requests.HTTPError
             If the API request fails (e.g., 404 for non-existent group, 400 for invalid payload).
 
         Examples
         --------
-        >>> payload = {
-        ...     "identifier": "testgroup",
-        ...     "attributes": {"disabled": True}
-        ... }
+        >>> from copy import deepcopy
+        >>> payload = deepcopy(UserGroupManager.GROUP_TEMPLATE)
+        >>> payload.update({"identifier": "testgroup", "attributes": {"disabled": True}})
         >>> response = group_manager.update("testgroup", payload)
-        >>> print(response.status_code)
-        204
         """
+        validate_payload(payload, self.GROUP_TEMPLATE)
         result = requester(
             guac_client=self.client,
             url=f"{self.url}/{identifier}",
@@ -251,10 +318,12 @@ class UserGroupManager:
         >>> print(response)
         None
 
-        #TODO: Deletion may fail with 500 due to SQL syntax error in Guacamole's MySQL JDBC module
-        # (missing AND in query: DELETE FROM guacamole_entity WHERE type = 'USER_GROUP' name = ?).
-        # Workaround: Manually delete via SQL: DELETE FROM guacamole_entity WHERE type = 'USER_GROUP' AND name = 'testgroup'.
-        # Reported to Guacamole team.
+        Notes
+        -----
+        Deletion may fail with 500 due to SQL syntax error in Guacamole's MySQL JDBC module
+        (missing AND in query: DELETE FROM guacamole_entity WHERE type = 'USER_GROUP' name = ?).
+        Workaround: Manually delete via SQL: DELETE FROM guacamole_entity WHERE type = 'USER_GROUP' AND name = 'testgroup'.
+        Reported to Guacamole team (GUACAMOLE-2088).
         """
         try:
             result = requester(

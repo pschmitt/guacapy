@@ -24,12 +24,11 @@ import time
 import logging
 import re
 import requests
-from simplejson.scanner import JSONDecodeError
+from json.decoder import JSONDecodeError
 from typing import Union, Dict, List, Any, Optional
 
 # Get the logger for this module
 logger = logging.getLogger(__name__)
-
 
 def configure_logging(
     level: Optional[str] = None,
@@ -90,7 +89,6 @@ def configure_logging(
         level_map[level],
         f"Logging configured for '{logger_name or 'root'}' at level {level}",
     )
-
 
 def requester(
     guac_client: Any,
@@ -175,6 +173,29 @@ def requester(
             raise
     return response
 
+def validate_payload(payload: Dict[str, Any], template: Dict[str, Any]) -> None:
+    """
+    Validate a payload against a template, ensuring required fields are present.
+
+    Parameters
+    ----------
+    payload : Dict[str, Any]
+        The payload to validate.
+    template : Dict[str, Any]
+        The template dictionary with expected structure.
+
+    Raises
+    ------
+    ValueError
+        If required fields are missing or types are incorrect.
+    """
+    for key, value in template.items():
+        if key not in payload:
+            raise ValueError(f"Missing required field: {key}")
+        if isinstance(value, dict) and isinstance(payload.get(key), dict):
+            validate_payload(payload[key], value)
+        elif value is not None and payload[key] is None:
+            raise ValueError(f"Field {key} cannot be None")
 
 def get_hotp_token(
     secret: str,
@@ -201,7 +222,6 @@ def get_hotp_token(
     o = h[19] & 15
     return (struct.unpack(">I", h[o : o + 4])[0] & 0x7FFFFFFF) % 1000000
 
-
 def get_totp_token(secret: str) -> str:
     """
     Generate a TOTP token for two-factor authentication.
@@ -223,7 +243,6 @@ def get_totp_token(secret: str) -> str:
     """
     value = get_hotp_token(secret, intervals_no=int(time.time()) // 30)
     return str(value).rjust(6, "0")
-
 
 def _find_by_name(
     guac_client: Any,
@@ -285,7 +304,6 @@ def _find_by_name(
         return data
     return None
 
-
 def _find_connection_by_name(
     guac_client: Any,
     connection_data: Dict[str, Any],
@@ -320,7 +338,6 @@ def _find_connection_by_name(
         regex,
     )
 
-
 def _find_connection_group_by_name(
     guac_client: Any,
     group_data: Dict[str, Any],
@@ -354,7 +371,6 @@ def _find_connection_group_by_name(
         "childConnectionGroups",
         regex,
     )
-
 
 def get_connection_group_by_name(
     guac_client: Any,

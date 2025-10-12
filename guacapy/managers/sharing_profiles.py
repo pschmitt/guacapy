@@ -29,13 +29,20 @@ Create a client and list sharing profiles:
 import logging
 import requests
 from typing import Dict, Any, Optional
-from ..utilities import requester
+from .base import BaseManager
+from ..utilities import requester, validate_payload
 
 # Get the logger for this module
 logger = logging.getLogger(__name__)
 
+class SharingProfileManager(BaseManager):
+    PROFILE_TEMPLATE: Dict[str, Any] = {
+        "name": "",
+        "primaryConnectionIdentifier": "",
+        "parameters": {"read-only": ""},
+        "attributes": {},
+    }
 
-class SharingProfileManager:
     def __init__(
         self,
         client: Any,
@@ -66,11 +73,7 @@ class SharingProfileManager:
         requests.HTTPError
             If the API authentication fails or the datasource is invalid.
         """
-        self.client = client
-        if datasource:
-            self.datasource = datasource
-        else:
-            self.datasource = self.client.primary_datasource
+        super().__init__(client, datasource)
         self.url = f"{self.client.base_url}/session/data/{self.datasource}/sharingProfiles"
 
     def list(self) -> Dict[str, Any]:
@@ -130,6 +133,37 @@ class SharingProfileManager:
         )
         return result
 
+    def parameters(self, identifier: str) -> Dict[str, Any]:
+        """
+        Retrieve parameters for a specific sharing profile.
+
+        Parameters
+        ----------
+        identifier : str
+            The identifier of the sharing profile to retrieve parameters for.
+
+        Returns
+        -------
+        Dict[str, Any]
+            The sharing profile parameters (e.g., read-only settings).
+
+        Raises
+        ------
+        requests.HTTPError
+            If the API request fails (e.g., 404 for non-existent profile, 401 for unauthorized).
+
+        Examples
+        --------
+        >>> params = profile_manager.parameters("1")
+        >>> print(params)
+        {'read-only': '', ...}
+        """
+        result = requester(
+            guac_client=self.client,
+            url=f"{self.url}/{identifier}/parameters",
+        )
+        return result
+
     def create(self, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
         Create a new sharing profile.
@@ -137,7 +171,7 @@ class SharingProfileManager:
         Parameters
         ----------
         payload : Dict[str, Any]
-            The sharing profile creation payload containing name and primary connection identifier.
+            The sharing profile creation payload. Must conform to PROFILE_TEMPLATE.
 
         Returns
         -------
@@ -146,24 +180,22 @@ class SharingProfileManager:
 
         Raises
         ------
+        ValueError
+            If the payload is invalid.
         requests.HTTPError
-            If the API request fails for reasons other than 400 (e.g., 401 for unauthorized).
+            If the API request fails for reasons other than 400.
 
         Examples
         --------
-        >>> payload = {
+        >>> from copy import deepcopy
+        >>> payload = deepcopy(SharingProfileManager.PROFILE_TEMPLATE)
+        >>> payload.update({
         ...     "name": "testprofile",
-        ...     "primaryConnectionIdentifier": "1",
-        ...     "parameters": {},
-        ...     "attributes": {}
-        ... }
+        ...     "primaryConnectionIdentifier": "1"
+        ... })
         >>> profile = profile_manager.create(payload)
-        >>> print(profile)
-        {'identifier': '2', 'name': 'testprofile', 'primaryConnectionIdentifier': '1', ...}
-        >>> # If profile already exists
-        >>> print(profile)
-        None
         """
+        validate_payload(payload, self.PROFILE_TEMPLATE)
         try:
             result = requester(
                 guac_client=self.client,
@@ -191,7 +223,7 @@ class SharingProfileManager:
         identifier : str
             The identifier of the sharing profile to update.
         payload : Dict[str, Any]
-            The update payload containing sharing profile attributes.
+            The update payload. Must conform to PROFILE_TEMPLATE.
 
         Returns
         -------
@@ -200,22 +232,23 @@ class SharingProfileManager:
 
         Raises
         ------
+        ValueError
+            If the payload is invalid.
         requests.HTTPError
             If the API request fails (e.g., 404 for non-existent profile, 400 for invalid payload).
 
         Examples
         --------
-        >>> payload = {
+        >>> from copy import deepcopy
+        >>> payload = deepcopy(SharingProfileManager.PROFILE_TEMPLATE)
+        >>> payload.update({
         ...     "identifier": "2",
         ...     "name": "testprofile_updated",
-        ...     "primaryConnectionIdentifier": "1",
-        ...     "parameters": {},
-        ...     "attributes": {}
-        ... }
+        ...     "primaryConnectionIdentifier": "1"
+        ... })
         >>> response = profile_manager.update("2", payload)
-        >>> print(response.status_code)
-        204
         """
+        validate_payload(payload, self.PROFILE_TEMPLATE)
         result = requester(
             guac_client=self.client,
             url=f"{self.url}/{identifier}",

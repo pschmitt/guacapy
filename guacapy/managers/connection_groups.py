@@ -29,13 +29,23 @@ Create a client and list connection groups:
 import logging
 import requests
 from typing import Dict, Any, Optional
-from ..utilities import requester
+from .base import BaseManager
+from ..utilities import requester, validate_payload
 
 # Get the logger for this module
 logger = logging.getLogger(__name__)
 
+class ConnectionGroupManager(BaseManager):
+    ORG_TEMPLATE: Dict[str, Any] = {
+        "name": "",
+        "parentIdentifier": "ROOT",
+        "type": "ORGANIZATIONAL",
+        "attributes": {
+            "max-connections": "",
+            "max-connections-per-user": "",
+        },
+    }
 
-class ConnectionGroupManager:
     def __init__(
         self,
         client: Any,
@@ -66,11 +76,7 @@ class ConnectionGroupManager:
         requests.HTTPError
             If the API authentication fails or the datasource is invalid.
         """
-        self.client = client
-        if datasource:
-            self.datasource = datasource
-        else:
-            self.datasource = self.client.primary_datasource
+        super().__init__(client, datasource)
         self.url = f"{self.client.base_url}/session/data/{self.datasource}/connectionGroups"
 
     def list(self) -> Dict[str, Any]:
@@ -130,6 +136,32 @@ class ConnectionGroupManager:
         )
         return result
 
+    def get_by_name(self, name: str, regex: bool = False) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve a connection group by its name.
+
+        Parameters
+        ----------
+        name : str
+            The name of the connection group to find.
+        regex : bool, optional
+            Whether to use regex matching for the name. Defaults to False.
+
+        Returns
+        -------
+        Optional[Dict[str, Any]]
+            The connection group dictionary if found, else None.
+
+        Examples
+        --------
+        >>> group = group_manager.get_by_name("Root Group")
+        >>> print(group)
+        {'identifier': 'ROOT', 'name': 'Root Group', 'type': 'ORGANIZATIONAL', ...}
+        """
+        from ..utilities import _find_connection_group_by_name
+        cons = self.list()
+        return _find_connection_group_by_name(self.client, cons, name, regex)
+
     def create(self, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
         Create a new connection group.
@@ -137,7 +169,7 @@ class ConnectionGroupManager:
         Parameters
         ----------
         payload : Dict[str, Any]
-            The connection group creation payload containing name and type.
+            The connection group creation payload. Must conform to ORG_TEMPLATE.
 
         Returns
         -------
@@ -146,24 +178,19 @@ class ConnectionGroupManager:
 
         Raises
         ------
+        ValueError
+            If the payload is invalid.
         requests.HTTPError
-            If the API request fails for reasons other than 400 (e.g., 401 for unauthorized).
+            If the API request fails for reasons other than 400.
 
         Examples
         --------
-        >>> payload = {
-        ...     "name": "testgroup",
-        ...     "parentIdentifier": "ROOT",
-        ...     "type": "ORGANIZATIONAL",
-        ...     "attributes": {}
-        ... }
+        >>> from copy import deepcopy
+        >>> payload = deepcopy(ConnectionGroupManager.ORG_TEMPLATE)
+        >>> payload.update({"name": "testgroup"})
         >>> group = group_manager.create(payload)
-        >>> print(group)
-        {'identifier': '2', 'name': 'testgroup', 'type': 'ORGANIZATIONAL', ...}
-        >>> # If group already exists
-        >>> print(group)
-        None
         """
+        validate_payload(payload, self.ORG_TEMPLATE)
         try:
             result = requester(
                 guac_client=self.client,
@@ -191,7 +218,7 @@ class ConnectionGroupManager:
         identifier : str
             The identifier of the connection group to update.
         payload : Dict[str, Any]
-            The update payload containing connection group attributes.
+            The update payload. Must conform to ORG_TEMPLATE.
 
         Returns
         -------
@@ -200,22 +227,19 @@ class ConnectionGroupManager:
 
         Raises
         ------
+        ValueError
+            If the payload is invalid.
         requests.HTTPError
             If the API request fails (e.g., 404 for non-existent group, 400 for invalid payload).
 
         Examples
         --------
-        >>> payload = {
-        ...     "identifier": "2",
-        ...     "name": "testgroup_updated",
-        ...     "parentIdentifier": "ROOT",
-        ...     "type": "ORGANIZATIONAL",
-        ...     "attributes": {}
-        ... }
+        >>> from copy import deepcopy
+        >>> payload = deepcopy(ConnectionGroupManager.ORG_TEMPLATE)
+        >>> payload.update({"name": "testgroup_updated", "identifier": "2"})
         >>> response = group_manager.update("2", payload)
-        >>> print(response.status_code)
-        204
         """
+        validate_payload(payload, self.ORG_TEMPLATE)
         result = requester(
             guac_client=self.client,
             url=f"{self.url}/{identifier}",

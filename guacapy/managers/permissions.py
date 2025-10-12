@@ -29,13 +29,13 @@ Create a client and assign a system permission:
 import logging
 import requests
 from typing import Dict, Any, Optional
+from .base import BaseManager
 from ..utilities import requester
 
 # Get the logger for this module
 logger = logging.getLogger(__name__)
 
-
-class PermissionsManager:
+class PermissionsManager(BaseManager):
     def __init__(
         self,
         client: Any,
@@ -66,11 +66,7 @@ class PermissionsManager:
         requests.HTTPError
             If the API authentication fails or the datasource is invalid.
         """
-        self.client = client
-        if datasource:
-            self.datasource = datasource
-        else:
-            self.datasource = self.client.primary_datasource
+        super().__init__(client, datasource)
         self.url = (
             f"{self.client.base_url}/session/data/{self.datasource}/users"
         )
