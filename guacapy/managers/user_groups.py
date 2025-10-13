@@ -329,7 +329,8 @@ class UserGroupManager(BaseManager):
         Raises
         ------
         requests.HTTPError
-            If the API request fails for reasons other than 500 (e.g., 404 for non-existent group, 401 for unauthorized).
+            If the API request fails for reasons other than 500
+            (e.g., 404 for non-existent group, 401 for unauthorized).
 
         Examples
         --------
@@ -344,7 +345,8 @@ class UserGroupManager(BaseManager):
         -----
         Deletion may fail with 500 due to SQL syntax error in Guacamole's MySQL JDBC module
         (missing AND in query: DELETE FROM guacamole_entity WHERE type = 'USER_GROUP' name = ?).
-        Workaround: Manually delete via SQL: DELETE FROM guacamole_entity WHERE type = 'USER_GROUP' AND name = 'testgroup'.
+        Workaround: Manually delete via SQL:
+        DELETE FROM guacamole_entity WHERE type = 'USER_GROUP' AND name = 'testgroup'.
         Reported to Guacamole team (GUACAMOLE-2088).
         """
         try:

@@ -239,7 +239,7 @@ def get_hotp_token(
     msg = struct.pack(">Q", intervals_no)
     h = bytes(hmac.new(key, msg, hashlib.sha1).digest())
     o = h[19] & 15
-    return (struct.unpack(">I", h[o : o + 4])[0] & 0x7FFFFFFF) % 1000000
+    return (struct.unpack(">I", h[o : o + 4])[0] & 0x7FFFFFFF) % 1000000  # noqa:E203
 
 
 def get_totp_token(secret: str) -> str:

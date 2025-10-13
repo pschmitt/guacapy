@@ -38,7 +38,8 @@ Create a client and list users:
 Retrieve user details:
 >>> user = user_manager.user_details("daxm")
 >>> print(user)
-{'username': 'daxm', 'disabled': False, 'attributes': {'guac-full-name': 'Dax Mickelson', 'guac-email-address': 'asdf@asdf.com', ...}, 'lastActive': 1760023106000}
+{'username': 'daxm', 'disabled': False, 'attributes': {'guac-full-name': 'Dax Mickelson',
+'guac-email-address': 'asdf@asdf.com', ...}, 'lastActive': 1760023106000}
 """
 
 import logging
@@ -124,7 +125,7 @@ class UserManager(BaseManager):
         --------
         >>> users = user_manager.list()
         >>> print(users)
-        {'guacadmin': {'username': 'guacadmin', 'disabled': False, 'attributes': {...}, 'lastActive': 1760229440000}, ...}
+        {'testuser': {'username': 'testuser', 'disabled': False, 'attributes': {...}, 'lastActive': 1760229440000}, ...}
         """
         result = requester(
             guac_client=self.client,
@@ -158,7 +159,8 @@ class UserManager(BaseManager):
         --------
         >>> user = user_manager.user_details("daxm")
         >>> print(user)
-        {'username': 'daxm', 'disabled': False, 'attributes': {'guac-full-name': 'Dax Mickelson', 'guac-email-address': 'asdf@asdf.com', ...}, 'lastActive': 1760023106000}
+        {'username': 'daxm', 'disabled': False, 'attributes': {'guac-full-name': 'Dax Mickelson',
+        'guac-email-address': 'asdf@asdf.com', ...}, 'lastActive': 1760023106000}
         """
         result = requester(
             guac_client=self.client,
@@ -192,7 +194,9 @@ class UserManager(BaseManager):
         --------
         >>> permissions = user_manager.user_permissions("daxm")
         >>> print(permissions)
-        {'connectionPermissions': {'1': ['READ']}, 'connectionGroupPermissions': {}, 'sharingProfilePermissions': {}, 'activeConnectionPermissions': {}, 'userPermissions': {'daxm': ['READ']}, 'userGroupPermissions': {}, 'systemPermissions': []}
+        {'connectionPermissions': {'1': ['READ']}, 'connectionGroupPermissions': {}, 'sharingProfilePermissions': {},
+        'activeConnectionPermissions': {}, 'userPermissions': {'daxm': ['READ']}, 'userGroupPermissions': {},
+        'systemPermissions': []}
         """
         result = requester(
             guac_client=self.client,
@@ -226,7 +230,9 @@ class UserManager(BaseManager):
         --------
         >>> effective_perms = user_manager.user_effective_permissions("daxm")
         >>> print(effective_perms)
-        {'connectionPermissions': {'1': ['READ']}, 'connectionGroupPermissions': {}, 'sharingProfilePermissions': {}, 'activeConnectionPermissions': {}, 'userPermissions': {'daxm': ['READ']}, 'userGroupPermissions': {}, 'systemPermissions': []}
+        {'connectionPermissions': {'1': ['READ']}, 'connectionGroupPermissions': {}, 'sharingProfilePermissions': {},
+        'activeConnectionPermissions': {}, 'userPermissions': {'daxm': ['READ']}, 'userGroupPermissions': {},
+        'systemPermissions': []}
         """
         result = requester(
             guac_client=self.client,
