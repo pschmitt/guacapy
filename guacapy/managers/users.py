@@ -131,7 +131,7 @@ class UserManager(BaseManager):
             guac_client=self.client,
             url=self.url,
         )
-        return result
+        return result  # type: ignore[return-value]
 
     def user_details(
         self,
@@ -166,7 +166,7 @@ class UserManager(BaseManager):
             guac_client=self.client,
             url=f"{self.url}/{username}",
         )
-        return result
+        return result  # type: ignore[return-value]
 
     def user_permissions(
         self,
@@ -202,7 +202,7 @@ class UserManager(BaseManager):
             guac_client=self.client,
             url=f"{self.url}/{username}/permissions",
         )
-        return result
+        return result  # type: ignore[return-value]
 
     def user_effective_permissions(
         self,
@@ -238,7 +238,7 @@ class UserManager(BaseManager):
             guac_client=self.client,
             url=f"{self.url}/{username}/effectivePermissions",
         )
-        return result
+        return result  # type: ignore[return-value]
 
     def user_usergroups(
         self,
@@ -272,7 +272,7 @@ class UserManager(BaseManager):
             guac_client=self.client,
             url=f"{self.url}/{username}/userGroups",
         )
-        return result
+        return result  # type: ignore[return-value]
 
     def user_history(
         self,
@@ -306,7 +306,7 @@ class UserManager(BaseManager):
             guac_client=self.client,
             url=f"{self.url}/{username}/history",
         )
-        return result
+        return result  # type: ignore[return-value]
 
     def assign_usergroups(
         self,
@@ -353,7 +353,7 @@ class UserManager(BaseManager):
             payload=payload,
             json_response=False,
         )
-        return result
+        return result  # type: ignore[return-value]
 
     def revoke_usergroups(
         self,
@@ -400,7 +400,7 @@ class UserManager(BaseManager):
             payload=payload,
             json_response=False,
         )
-        return result
+        return result  # type: ignore[return-value]
 
     def self_details(self) -> Dict[str, Any]:
         """
@@ -426,7 +426,7 @@ class UserManager(BaseManager):
             guac_client=self.client,
             url=f"{self.client.base_url}/session/data/{self.datasource}/self",
         )
-        return result
+        return result  # type: ignore[return-value]
 
     def assign_connection(
         self,
@@ -484,7 +484,7 @@ class UserManager(BaseManager):
             payload=payload,
             json_response=False,
         )
-        return result
+        return result  # type: ignore[return-value]
 
     def revoke_connection(
         self,
@@ -542,7 +542,7 @@ class UserManager(BaseManager):
             payload=payload,
             json_response=False,
         )
-        return result
+        return result  # type: ignore[return-value]
 
     def update_password(
         self,
@@ -589,7 +589,7 @@ class UserManager(BaseManager):
             payload=payload,
             json_response=False,
         )
-        return result
+        return result  # type: ignore[return-value]
 
     def create(
         self,
@@ -631,7 +631,7 @@ class UserManager(BaseManager):
             method="POST",
             payload=payload,
         )
-        return result
+        return result  # type: ignore[return-value]
 
     def update(
         self,
@@ -677,7 +677,7 @@ class UserManager(BaseManager):
             payload=payload,
             json_response=False,
         )
-        return result
+        return result  # type: ignore[return-value]
 
     def delete(
         self,
@@ -713,4 +713,4 @@ class UserManager(BaseManager):
             method="DELETE",
             json_response=False,
         )
-        return result
+        return result  # type: ignore[return-value]

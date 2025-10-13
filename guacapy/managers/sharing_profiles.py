@@ -104,7 +104,7 @@ class SharingProfileManager(BaseManager):
             guac_client=self.client,
             url=self.url,
         )
-        return result
+        return result  # type: ignore[return-value]
 
     def details(
         self,
@@ -138,7 +138,7 @@ class SharingProfileManager(BaseManager):
             guac_client=self.client,
             url=f"{self.url}/{identifier}",
         )
-        return result
+        return result  # type: ignore[return-value]
 
     def parameters(
         self,
@@ -172,7 +172,7 @@ class SharingProfileManager(BaseManager):
             guac_client=self.client,
             url=f"{self.url}/{identifier}/parameters",
         )
-        return result
+        return result  # type: ignore[return-value]
 
     def create(
         self,
@@ -216,7 +216,7 @@ class SharingProfileManager(BaseManager):
                 method="POST",
                 payload=payload,
             )
-            return result
+            return result  # type: ignore[return-value]
         except requests.HTTPError as e:
             if e.response.status_code == 400:
                 logger.warning(
@@ -271,7 +271,7 @@ class SharingProfileManager(BaseManager):
             payload=payload,
             json_response=False,
         )
-        return result
+        return result  # type: ignore[return-value]
 
     def delete(
         self,
@@ -307,4 +307,4 @@ class SharingProfileManager(BaseManager):
             method="DELETE",
             json_response=False,
         )
-        return result
+        return result  # type: ignore[return-value]

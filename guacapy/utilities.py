@@ -318,7 +318,7 @@ def _find_by_name(
         else:
             result = [x for x in children if x["name"] == name]
         if result:
-            return result[0]
+            return result[0]  # type: ignore[index]
         if child_key in data:
             for child in data[child_key]:
                 result = _find_by_name(
