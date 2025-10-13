@@ -120,7 +120,7 @@ class PermissionsManager(BaseManager):
             payload=payload,
             json_response=False,
         )
-        return result
+        return result  # type: ignore[return-value]
 
     def revoke_system_permission(
         self,
@@ -167,4 +167,4 @@ class PermissionsManager(BaseManager):
             payload=payload,
             json_response=False,
         )
-        return result
+        return result  # type: ignore[return-value]

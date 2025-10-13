@@ -100,7 +100,7 @@ class ActiveConnectionManager(BaseManager):
             guac_client=self.client,
             url=self.url,
         )
-        return result
+        return result  # type: ignore[return-value]
 
     def details(
         self,
@@ -139,7 +139,7 @@ class ActiveConnectionManager(BaseManager):
                 guac_client=self.client,
                 url=f"{self.url}/{identifier}",
             )
-            return result
+            return result  # type: ignore[return-value]
         except requests.HTTPError as e:
             if e.response.status_code == 404:
                 logger.warning(
@@ -187,7 +187,7 @@ class ActiveConnectionManager(BaseManager):
                 method="DELETE",
                 json_response=False,
             )
-            return result
+            return result  # type: ignore[return-value]
         except requests.HTTPError as e:
             if e.response.status_code == 404:
                 logger.warning(

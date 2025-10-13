@@ -98,7 +98,7 @@ class SchemaManager(BaseManager):
             guac_client=self.client,
             url=f"{self.url}/protocols",
         )
-        return result
+        return result  # type: ignore[return-value]
 
     def user_attributes(self) -> Dict[str, Any]:
         """
@@ -124,4 +124,4 @@ class SchemaManager(BaseManager):
             guac_client=self.client,
             url=f"{self.url}/userAttributes",
         )
-        return result
+        return result  # type: ignore[return-value]

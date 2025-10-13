@@ -24,7 +24,7 @@ import logging
 import requests
 import urllib3
 from typing import Any, Dict, Optional
-from utilities import (
+from .utilities import (
     get_totp_token,
     configure_logging,
     requester,
@@ -217,7 +217,7 @@ class Guacamole:
             url=f"{self.base_url}/tokens",
             payload={"data": payload},
         )
-        return json_token["authToken"]
+        return json_token["authToken"]  # type: ignore[index]
 
     def logout(self) -> None:
         """

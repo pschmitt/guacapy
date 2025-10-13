@@ -107,7 +107,7 @@ class ConnectionGroupManager(BaseManager):
             guac_client=self.client,
             url=self.url,
         )
-        return result
+        return result  # type: ignore[return-value]
 
     def details(
         self,
@@ -141,7 +141,7 @@ class ConnectionGroupManager(BaseManager):
             guac_client=self.client,
             url=f"{self.url}/{identifier}",
         )
-        return result
+        return result  # type: ignore[return-value]
 
     def get_by_name(
         self,
@@ -218,7 +218,7 @@ class ConnectionGroupManager(BaseManager):
                 method="POST",
                 payload=payload,
             )
-            return result
+            return result  # type: ignore[return-value]
         except requests.HTTPError as e:
             if e.response.status_code == 400:
                 logger.warning(
@@ -269,7 +269,7 @@ class ConnectionGroupManager(BaseManager):
             payload=payload,
             json_response=False,
         )
-        return result
+        return result  # type: ignore[return-value]
 
     def delete(
         self,
@@ -305,4 +305,4 @@ class ConnectionGroupManager(BaseManager):
             method="DELETE",
             json_response=False,
         )
-        return result
+        return result  # type: ignore[return-value]
