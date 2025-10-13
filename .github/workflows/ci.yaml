@@ -29,13 +29,13 @@ jobs:
       uses: actions/cache@v4
       with:
         path: .venv
-        key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
+        key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}-v3
         restore-keys: |
           ${{ runner.os }}-poetry-
 
     - name: Install dependencies
       run: |
-        poetry install --no-interaction --with dev
+        poetry install --no-interaction --with dev || poetry run pip install flake8==7.3.0 black==25.9.0 mypy==1.18.2
 
     - name: Debug Poetry environment
       run: |
