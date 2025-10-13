@@ -9,7 +9,6 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.9"
 requests = "2.32.5"  # HTTP request library
-poetry-core = ">=1.0.0"
 
 [poetry.group.dev.dependencies]
 mypy = "^1.13.0"      # For static type checking
