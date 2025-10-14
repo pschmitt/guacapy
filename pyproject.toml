@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "guacapy"
-version = "1.20251013.0"
+version = "1.20251014.0"
 description = "A Python client for the Apache Guacamole REST API"
 authors = ["Philipp Schmitt <philipp@schmitt.co>", "Dax Mickelson <github@daxm.net>"]
 license = "GPL-3.0"
