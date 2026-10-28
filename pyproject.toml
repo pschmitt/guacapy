@@ -8,11 +8,20 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-requests = "2.34.2"  # HTTP request library
+requests = [
+    { version = "2.32.5", python = ">=3.9,<3.10" }, # HTTP request library for Python 3.9
+    { version = "2.34.2", python = ">=3.10" },
+]
 
 [tool.poetry.group.dev.dependencies]
-mypy = "^2.0.0"      # For static type checking
-black = "^26.0.0"     # Code formatter
+mypy = [
+    { version = "1.19.1", python = ">=3.9,<3.10" }, # Latest line supporting Python 3.9
+    { version = "^2.0.0", python = ">=3.10" },
+]
+black = [
+    { version = "25.11.0", python = ">=3.9,<3.10" }, # Latest line supporting Python 3.9
+    { version = "^26.0.0", python = ">=3.10" },
+]
 flake8 = "^7.3.0"     # Linter
 
 [build-system]
