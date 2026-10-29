@@ -4,7 +4,8 @@ on: [push, pull_request]
 
 jobs:
   lint:
-    runs-on: ubuntu-24.04
+    # setup-python does not provide Python 3.9 on Ubuntu 26.04.
+    runs-on: ${{ matrix.python-version == '3.9' && 'ubuntu-24.04' || 'ubuntu-26.04' }}
     strategy:
       fail-fast: false
       matrix:
